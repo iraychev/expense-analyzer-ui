@@ -18,9 +18,7 @@ export default function Transactions() {
   }
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState<"credit" | "debit">("debit");
 
   useEffect(() => {
@@ -50,11 +48,12 @@ export default function Transactions() {
 
   const filteredTransactions = transactions.filter(
     (transaction) =>
-      (!selectedCategory || transaction.category === selectedCategory) &&
+      (selectedCategory === "" || transaction.category === selectedCategory) &&
       (selectedTab === "credit"
         ? transaction.amount > 0
         : transaction.amount < 0)
   );
+
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
 
   const getCategoryIcon = (category: string) => {
@@ -85,7 +84,7 @@ export default function Transactions() {
         onValueChange={(itemValue) => setSelectedCategory(itemValue)}
         style={styles.picker}
       >
-        <Picker.Item label="All Categories" value={undefined} />
+        <Picker.Item label="All Categories" value="" />
         {categories.map((category) => (
           <Picker.Item key={category} label={category} value={category} />
         ))}
