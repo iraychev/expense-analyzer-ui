@@ -62,7 +62,7 @@ export default function Profile() {
       await AsyncStorage.removeItem("token");
       await AsyncStorage.removeItem("username");
       Alert.alert("Account Deleted", "Your account has been deleted.");
-      router.push("/register");
+      router.push("/auth/register");
     } catch (error: any) {
       Alert.alert("Failed to delete account", error.message);
     }
@@ -132,10 +132,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
   },
   bankReference: {
     fontSize: 18,

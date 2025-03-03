@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Alert, StyleSheet, Picker } from "react-native";
+import { View, Text, FlatList, Alert, StyleSheet } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { FontAwesome } from "@expo/vector-icons";
 
 export default function Transactions() {
   interface Transaction {
@@ -16,8 +18,10 @@ export default function Transactions() {
   }
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<"credit" | "debit">("credit");
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedTab, setSelectedTab] = useState<"credit" | "debit">("debit");
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -47,10 +51,32 @@ export default function Transactions() {
   const filteredTransactions = transactions.filter(
     (transaction) =>
       (!selectedCategory || transaction.category === selectedCategory) &&
-      (selectedTab === "credit" ? transaction.amount > 0 : transaction.amount < 0)
+      (selectedTab === "credit"
+        ? transaction.amount > 0
+        : transaction.amount < 0)
   );
-
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "Supermarkets":
+        return "shopping-cart";
+      case "Financial Services":
+        return "bank";
+      case "Shopping":
+        return "shopping-bag";
+      case "Restaurants and bars":
+        return "cutlery";
+      case "Entertainment and Sport":
+        return "futbol-o";
+      case "Traveling and Vacation":
+        return "plane";
+      case "Health and Beauty":
+        return "heartbeat";
+      default:
+        return "question-circle";
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -59,26 +85,20 @@ export default function Transactions() {
         onValueChange={(itemValue) => setSelectedCategory(itemValue)}
         style={styles.picker}
       >
-        <Picker.Item label="All Categories" value={null} />
+        <Picker.Item label="All Categories" value={undefined} />
         {categories.map((category) => (
           <Picker.Item key={category} label={category} value={category} />
         ))}
       </Picker>
       <View style={styles.tabContainer}>
         <Text
-          style={[
-            styles.tab,
-            selectedTab === "credit" && styles.selectedTab,
-          ]}
+          style={[styles.tab, selectedTab === "credit" && styles.selectedTab]}
           onPress={() => setSelectedTab("credit")}
         >
           Credit
         </Text>
         <Text
-          style={[
-            styles.tab,
-            selectedTab === "debit" && styles.selectedTab,
-          ]}
+          style={[styles.tab, selectedTab === "debit" && styles.selectedTab]}
           onPress={() => setSelectedTab("debit")}
         >
           Debit
@@ -89,16 +109,27 @@ export default function Transactions() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.transaction}>
-            <Text
-              style={[
-                styles.amount,
-                { color: item.amount < 0 ? "red" : "green" },
-              ]}
-            >
-              {item.amount < 0 ? "Debit" : "Credit"}: {Math.abs(item.amount)}{" "}
-              {item.currency}
-            </Text>
-            <Text style={styles.type}>Type: {item.type}</Text>
+            <FontAwesome
+              name={getCategoryIcon(item.category)}
+              size={24}
+              color="black"
+              style={styles.icon}
+            />
+            <View style={styles.transactionDetails}>
+              <Text
+                style={[
+                  styles.amount,
+                  { color: item.amount < 0 ? "red" : "green" },
+                ]}
+              >
+                {item.amount < 0 ? "Debit" : "Credit"}: {Math.abs(item.amount)}{" "}
+                {item.currency}
+              </Text>
+              <Text style={styles.type}>Type: {item.type}</Text>
+              <Text style={styles.description}>
+                Description: {item.description}
+              </Text>
+            </View>
           </View>
         )}
       />
@@ -134,15 +165,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#ddd",
   },
   transaction: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
     padding: 15,
     borderWidth: 1,
     borderRadius: 5,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+  },
+  icon: {
+    marginRight: 10,
+  },
+  transactionDetails: {
+    flex: 1,
   },
   amount: {
     fontSize: 18,
@@ -151,5 +187,9 @@ const styles = StyleSheet.create({
   type: {
     fontSize: 14,
     color: "#999",
+  },
+  description: {
+    fontSize: 14,
+    color: "#666",
   },
 });
