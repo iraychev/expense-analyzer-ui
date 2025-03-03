@@ -8,7 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import RNPickerSelect from "react-native-picker-select";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
@@ -132,16 +132,18 @@ export default function Transactions() {
 
   return (
     <View style={styles.container}>
-      <Picker
-        selectedValue={selectedCategory}
-        onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedCategory(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="All Categories" value="" />
-        {categories.map((category) => (
-          <Picker.Item key={category} label={category} value={category} />
-        ))}
-      </Picker>
+      <RNPickerSelect
+        onValueChange={(value: React.SetStateAction<string>) => setSelectedCategory(value)}
+        items={[
+          { label: "All Categories", value: "" },
+          ...categories.map((category) => ({
+            label: category,
+            value: category,
+          })),
+        ]}
+        style={pickerSelectStyles}
+        value={selectedCategory}
+      />
       <View style={styles.tabContainer}>
         <Text
           style={[styles.tab, selectedTab === "credit" && styles.selectedTab]}
@@ -295,5 +297,32 @@ const styles = StyleSheet.create({
   valueDate: {
     fontSize: 14,
     color: "#6c757d",
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    color: "black",
+    paddingRight: 30,
+    backgroundColor: "#fff",
+    marginBottom: 20,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 8,
+    color: "black",
+    paddingRight: 30,
+    backgroundColor: "#fff",
+    marginBottom: 20,
   },
 });
