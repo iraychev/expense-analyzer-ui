@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Alert, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Alert,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,6 +28,23 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState<"credit" | "debit">("debit");
+  const [selectedMonth, setSelectedMonth] = useState<string>("All");
+
+  const months = [
+    "All",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -46,13 +71,23 @@ export default function Transactions() {
     fetchTransactions();
   }, []);
 
-  const filteredTransactions = transactions.filter(
-    (transaction) =>
-      (selectedCategory === "" || transaction.category === selectedCategory) &&
-      (selectedTab === "credit"
+  const filteredTransactions = transactions.filter((transaction) => {
+    const categoryMatch =
+      selectedCategory === "" || transaction.category === selectedCategory;
+    const typeMatch =
+      selectedTab === "credit"
         ? transaction.amount > 0
-        : transaction.amount < 0)
-  );
+        : transaction.amount < 0;
+
+    let monthMatch = true;
+    if (selectedMonth !== "All") {
+      const monthIndex = months.indexOf(selectedMonth) - 1;
+      const transactionMonth = new Date(transaction.valueDate).getMonth();
+      monthMatch = transactionMonth === monthIndex;
+    }
+
+    return categoryMatch && typeMatch && monthMatch;
+  });
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
 
@@ -75,6 +110,16 @@ export default function Transactions() {
       default:
         return "question-circle";
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${hours}:${minutes} ${day}.${month}.${year}`;
   };
 
   return (
@@ -103,6 +148,24 @@ export default function Transactions() {
           Debit
         </Text>
       </View>
+
+      <View style={styles.monthPickerContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {months.map((month) => (
+            <TouchableOpacity
+              key={month}
+              onPress={() => setSelectedMonth(month)}
+              style={[
+                styles.monthOption,
+                selectedMonth === month && styles.selectedMonth,
+              ]}
+            >
+              <Text>{month}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
         data={filteredTransactions}
         keyExtractor={(item) => item.id.toString()}
@@ -124,7 +187,7 @@ export default function Transactions() {
                 {item.amount < 0 ? "Debit" : "Credit"}: {Math.abs(item.amount)}{" "}
                 {item.currency}
               </Text>
-              <Text style={styles.type}>Type: {item.type}</Text>
+              <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
               <Text style={styles.description}>
                 Description: {item.description}
               </Text>
@@ -163,6 +226,25 @@ const styles = StyleSheet.create({
   selectedTab: {
     backgroundColor: "#ddd",
   },
+  monthPickerContainer: {
+    height: 60,
+    marginBottom: 20,
+  },
+  monthOption: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginRight: 10,
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedMonth: {
+    backgroundColor: "#ddd",
+    borderColor: "#888",
+  },
   transaction: {
     flexDirection: "row",
     alignItems: "center",
@@ -171,7 +253,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     backgroundColor: "#fff",
-    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
   icon: {
     marginRight: 10,
@@ -188,6 +274,10 @@ const styles = StyleSheet.create({
     color: "#999",
   },
   description: {
+    fontSize: 14,
+    color: "#666",
+  },
+  valueDate: {
     fontSize: 14,
     color: "#666",
   },
