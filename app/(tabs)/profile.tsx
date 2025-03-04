@@ -10,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Colors from "@/constants/Colors";
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null);
@@ -70,14 +71,15 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Profile</Text>
       <Text style={styles.label}>Name: {user.name}</Text>
       <Text style={styles.label}>Username: {user.username}</Text>
       <Text style={styles.label}>Email: {user.email}</Text>
@@ -108,43 +110,68 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: Colors.text,
+  },
   container: {
     flexGrow: 1,
-    justifyContent: "center",
     padding: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: Colors.background,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.primary,
+    marginBottom: 20,
+    textAlign: "center",
   },
   label: {
     fontSize: 18,
     marginBottom: 10,
-    color: "#333",
+    color: Colors.text,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
     marginTop: 20,
     marginBottom: 10,
-    color: "#333",
+    color: Colors.primary,
   },
   bankConnection: {
-    padding: 10,
+    padding: 15,
     marginBottom: 10,
     borderWidth: 1,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-    boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
+    borderRadius: 8,
+    backgroundColor: Colors.white,
+    borderColor: Colors.muted,
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    // Android shadow
+    elevation: 2,
   },
   bankReference: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: Colors.primary,
     marginBottom: 5,
   },
   bankLabel: {
     fontSize: 16,
-    color: "#666",
+    color: Colors.text,
   },
   buttonContainer: {
     marginTop: 20,
+    borderRadius: 8,
+    overflow: "hidden",
   },
 });

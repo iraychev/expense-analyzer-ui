@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Colors from "@/constants/Colors";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -66,28 +67,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: Colors.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
+    color: Colors.primary,
   },
   label: {
     fontSize: 18,
     marginBottom: 10,
+    color: Colors.text,
   },
   input: {
     borderWidth: 1,
     marginBottom: 10,
     padding: 10,
     borderRadius: 5,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
+    borderColor: Colors.muted,
   },
   link: {
     marginTop: 20,
-    color: "blue",
+    color: Colors.accent,
     textAlign: "center",
     textDecorationLine: "underline",
   },

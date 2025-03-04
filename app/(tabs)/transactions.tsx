@@ -13,6 +13,7 @@ import RNPickerSelect from "react-native-picker-select";
 import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
+import Colors from "@/constants/Colors";
 
 export default function Transactions() {
   interface Transaction {
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: "row",
@@ -386,8 +387,8 @@ const styles = StyleSheet.create({
     padding: 15,
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: "#fff",
-    borderColor: "#ced4da",
+    backgroundColor: Colors.white,
+    borderColor: Colors.muted,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: "#6c757d",
+    color: Colors.text,
   },
   noTransactions: {
     flex: 1,
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
   },
   noTransactionsText: {
     fontSize: 18,
-    color: "#6c757d",
+    color: Colors.text,
   },
 });
 
