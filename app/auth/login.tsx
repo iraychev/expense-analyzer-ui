@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import axiosInstance from "../../axiosInstance";
+import axiosInstance from "@/axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Login() {
@@ -31,7 +31,7 @@ export default function Login() {
       );
       await AsyncStorage.setItem("token", response.data);
       await AsyncStorage.setItem("username", username);
-      router.replace("/ ");
+      router.replace("/");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message;
       Alert.alert("Login Failed", `Error: ${errorMessage}`);

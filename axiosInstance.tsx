@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://192.168.11.110:8080/api/v1',
+  baseURL: 'http://localhost:8080/api/v1',
 });
 
 axiosInstance.interceptors.request.use(
