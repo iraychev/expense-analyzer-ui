@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import axiosInstance from "../../axiosInstance";
@@ -27,8 +28,16 @@ export default function Transactions() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedTab, setSelectedTab] = useState<"credit" | "debit">("debit");
+  const [selectedType, setSelectedType] = useState<
+    "all" | "income" | "expense"
+  >("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("All");
+
+  const [tempCategory, setTempCategory] = useState<string>(selectedCategory);
+  const [tempType, setTempType] = useState<"all" | "income" | "expense">(
+    selectedType
+  );
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -36,14 +45,20 @@ export default function Transactions() {
   for (let year = currentYear - 1; year <= currentYear; year++) {
     for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
       if (year === currentYear && monthIndex > currentMonth) break;
-      const month = new Date(year, monthIndex).toLocaleString("default", {
+      const monthName = new Date(year, monthIndex).toLocaleString("default", {
         month: "long",
       });
-      months.push(`${year} ${month}`);
+      months.push(`${year} ${monthName}`);
     }
   }
+  months.push("All");
 
   const scrollViewRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -52,7 +67,6 @@ export default function Transactions() {
         Alert.alert("Error", "Username not found in local storage");
         return;
       }
-
       try {
         const response = await axiosInstance.get(
           `/users/username/${username}/with-transactions`
@@ -66,39 +80,34 @@ export default function Transactions() {
         Alert.alert("Failed to fetch transactions", error.message);
       }
     };
-
     fetchTransactions();
-  }, []);
-
-  useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
   }, []);
 
   const filteredTransactions = transactions.filter((transaction) => {
     const categoryMatch =
       selectedCategory === "" || transaction.category === selectedCategory;
-    const typeMatch =
-      selectedTab === "credit"
-        ? transaction.amount > 0
-        : transaction.amount < 0;
-
+    let typeMatch = true;
+    if (selectedType === "income") {
+      typeMatch = transaction.amount > 0;
+    } else if (selectedType === "expense") {
+      typeMatch = transaction.amount < 0;
+    }
     let monthMatch = true;
     if (selectedMonth !== "All") {
-      const [year, month] = selectedMonth.split(" ");
-      const monthIndex = months.indexOf(selectedMonth) % 12;
+      const [year, ...monthParts] = selectedMonth.split(" ");
+      const monthName = monthParts.join(" ");
       const transactionDate = new Date(transaction.valueDate);
+      const transactionMonth = transactionDate.toLocaleString("default", {
+        month: "long",
+      });
       monthMatch =
         transactionDate.getFullYear() === parseInt(year) &&
-        transactionDate.getMonth() === monthIndex;
+        transactionMonth === monthName;
     }
-
     return categoryMatch && typeMatch && monthMatch;
   });
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
-
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case "Supermarkets":
@@ -122,50 +131,39 @@ export default function Transactions() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
-    return `${hours}:${minutes} ${day}.${month}.${year}`;
+    return `${day}.${month}.${year}`;
+  };
+
+  const openFilterModal = () => {
+    setTempCategory(selectedCategory);
+    setTempType(selectedType);
+    setFilterModalVisible(true);
+  };
+
+  const applyFilters = () => {
+    setSelectedCategory(tempCategory);
+    setSelectedType(tempType);
+    setFilterModalVisible(false);
   };
 
   return (
     <View style={styles.container}>
-      <RNPickerSelect
-        onValueChange={(value: React.SetStateAction<string>) => setSelectedCategory(value)}
-        items={[
-          { label: "All Categories", value: "" },
-          ...categories.map((category) => ({
-            label: category,
-            value: category,
-          })),
-        ]}
-        style={pickerSelectStyles}
-        value={selectedCategory}
-      />
-      <View style={styles.tabContainer}>
-        <Text
-          style={[styles.tab, selectedTab === "credit" && styles.selectedTab]}
-          onPress={() => setSelectedTab("credit")}
-        >
-          Credit
-        </Text>
-        <Text
-          style={[styles.tab, selectedTab === "debit" && styles.selectedTab]}
-          onPress={() => setSelectedTab("debit")}
-        >
-          Debit
-        </Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Transactions</Text>
+        <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
+          <FontAwesome name="filter" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
-
       <View style={styles.monthPickerContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           ref={scrollViewRef}
         >
-          {months.map((month: string) => (
+          {months.map((month) => (
             <TouchableOpacity
               key={month}
               onPress={() => setSelectedMonth(month)}
@@ -174,15 +172,81 @@ export default function Transactions() {
                 selectedMonth === month && styles.selectedMonth,
               ]}
             >
-              <Text>{month}</Text>
+              <Text style={styles.monthText}>{month}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
-
+      <Modal
+        visible={filterModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Filter Transactions</Text>
+            <RNPickerSelect
+              onValueChange={(value: string) => setTempCategory(value)}
+              items={[
+                { label: "All Categories", value: "" },
+                ...categories.map((category) => ({
+                  label: category,
+                  value: category,
+                })),
+              ]}
+              style={pickerSelectStyles}
+              value={tempCategory}
+              useNativeAndroidPickerStyle={false}
+            />
+            <View style={styles.toggleContainer}>
+              {["all", "income", "expense"].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() =>
+                    setTempType(type as "all" | "income" | "expense")
+                  }
+                  style={[
+                    styles.toggleButton,
+                    tempType === type && styles.selectedToggle,
+                  ]}
+                >
+                  <Text style={styles.toggleText}>
+                    {type === "income"
+                      ? "Income"
+                      : type === "expense"
+                      ? "Expense"
+                      : "All"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={applyFilters}
+                style={styles.modalButton}
+              >
+                <Text style={styles.modalButtonText}>Apply</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setFilterModalVisible(false)}
+                style={[styles.modalButton, styles.cancelButton]}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <FlatList
         data={filteredTransactions}
         keyExtractor={(item) => item.id.toString()}
+        ListEmptyComponent={() => (
+          <View style={styles.noTransactions}>
+            <Text style={styles.noTransactionsText}>
+              No transactions for the selected month.
+            </Text>
+          </View>
+        )}
         renderItem={({ item }) => (
           <View style={styles.transaction}>
             <FontAwesome
@@ -198,8 +262,7 @@ export default function Transactions() {
                   { color: item.amount < 0 ? "red" : "green" },
                 ]}
               >
-                {item.amount < 0 ? "Debit" : "Credit"}: {Math.abs(item.amount)}{" "}
-                {item.currency}
+                {Math.abs(item.amount)} {item.currency}
               </Text>
               <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
               <Text style={styles.description}>
@@ -219,36 +282,24 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f8f9fa",
   },
-  picker: {
-    marginBottom: 20,
-    backgroundColor: "#fff",
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#ced4da",
-  },
-  tabContainer: {
+  header: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  tab: {
-    fontSize: 18,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  filterButton: {
+    backgroundColor: "#6c757d",
     padding: 10,
-    borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: "#fff",
-    textAlign: "center",
-    flex: 1,
-    marginHorizontal: 5,
-    borderColor: "#ced4da",
-  },
-  selectedTab: {
-    backgroundColor: "#e9ecef",
-    borderColor: "#adb5bd",
   },
   monthPickerContainer: {
-    height: 60,
-    marginBottom: 20,
+    height: 50,
+    marginBottom: 15,
   },
   monthOption: {
     paddingHorizontal: 15,
@@ -261,9 +312,72 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  monthText: {
+    fontSize: 16,
+  },
   selectedMonth: {
     backgroundColor: "#e9ecef",
     borderColor: "#adb5bd",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 20,
+  },
+  toggleButton: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 5,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  selectedToggle: {
+    backgroundColor: "#e9ecef",
+    borderColor: "#adb5bd",
+  },
+  toggleText: {
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    backgroundColor: "#6c757d",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#adb5bd",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   transaction: {
     flexDirection: "row",
@@ -274,7 +388,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "#fff",
     borderColor: "#ced4da",
-    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
   icon: {
     marginRight: 10,
@@ -286,7 +404,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  type: {
+  valueDate: {
     fontSize: 14,
     color: "#6c757d",
   },
@@ -294,14 +412,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6c757d",
   },
-  valueDate: {
-    fontSize: 14,
+  noTransactions: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  noTransactionsText: {
+    fontSize: 18,
     color: "#6c757d",
   },
 });
 
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
+    height: 50,
     fontSize: 16,
     paddingVertical: 12,
     paddingHorizontal: 10,
@@ -314,6 +439,7 @@ const pickerSelectStyles = StyleSheet.create({
     marginBottom: 20,
   },
   inputAndroid: {
+    height: 50,
     fontSize: 16,
     paddingHorizontal: 10,
     paddingVertical: 8,
