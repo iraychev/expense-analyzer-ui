@@ -12,23 +12,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
-import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
+import { Transaction } from "@/interface/Transaction";
+import { fetchTransactions } from "@/api/transaction";
 
 export default function Transactions() {
-  interface Transaction {
-    id: number;
-    amount: number;
-    currency: string;
-    valueDate: string;
-    transactionDate: string;
-    category: string;
-    description: string;
-    type: string;
-  }
-
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedType, setSelectedType] = useState<
@@ -65,28 +55,22 @@ export default function Transactions() {
   }, []);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
+    const loadTransactions = async () => {
       const username = await AsyncStorage.getItem("username");
       if (!username) {
         Alert.alert("Error", "Username not found in local storage");
         return;
       }
       try {
-        const response = await axiosInstance.get(
-          `/users/username/${username}/with-transactions`
-        );
-        setTransactions(
-          response.data.bankConnections.flatMap((connection: any) =>
-            connection.accounts.flatMap((account: any) => account.transactions)
-          )
-        );
+        const txs = await fetchTransactions(username);
+        setTransactions(txs);
       } catch (error: any) {
         Alert.alert("Failed to fetch transactions", error.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchTransactions();
+    loadTransactions();
   }, []);
 
   const filteredTransactions = transactions.filter((transaction) => {

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  Button,
   Alert,
   StyleSheet,
   ScrollView,
@@ -11,29 +10,29 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import axiosInstance from "../../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
+import { fetchUser, deleteUser, updateBankConnections } from "@/api/user";
+import { User } from "@/interface/User";
+import { BankConnection } from "@/interface/BankConnection";
 
 export default function Profile() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
     let isMounted = true;
-
-    const fetchUser = async () => {
+    const loadUser = async () => {
       const username = await AsyncStorage.getItem("username");
       if (!username) {
         Alert.alert("Error", "Username not found in local storage");
         return;
       }
-
       try {
-        const response = await axiosInstance.get(`/users/username/${username}`);
+        const fetchedUser = await fetchUser(username);
         if (isMounted) {
-          setUser(response.data);
+          setUser(fetchedUser);
         }
       } catch (error: any) {
         if (isMounted) {
@@ -45,9 +44,7 @@ export default function Profile() {
         }
       }
     };
-
-    fetchUser();
-
+    loadUser();
     return () => {
       isMounted = false;
     };
@@ -74,9 +71,8 @@ export default function Profile() {
               Alert.alert("Error", "Username not found in local storage");
               return;
             }
-
             try {
-              await axiosInstance.delete(`/users/username/${username}`);
+              await deleteUser(username);
               await AsyncStorage.removeItem("token");
               await AsyncStorage.removeItem("username");
               Alert.alert("Account Deleted", "Your account has been deleted.");
@@ -97,10 +93,8 @@ export default function Profile() {
       return;
     }
     try {
-      const response = await axiosInstance.put(
-        `/users/username/${username}/bank-connections/update`
-      );
-      setUser(response.data);
+      const updatedUser = await updateBankConnections(username);
+      setUser(updatedUser);
       Alert.alert("Success", "Bank connections updated successfully");
     } catch (error: any) {
       Alert.alert("Update Failed", error.message);
@@ -129,24 +123,24 @@ export default function Profile() {
             <View style={styles.sectionContainer}>
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Name</Text>
-                <Text style={styles.infoValue}>{user.name}</Text>
+                <Text style={styles.infoValue}>{user?.name}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Username</Text>
-                <Text style={styles.infoValue}>{user.username}</Text>
+                <Text style={styles.infoValue}>{user?.username}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{user.email}</Text>
+                <Text style={styles.infoValue}>{user?.email}</Text>
               </View>
             </View>
 
             <Text style={styles.pageSection}>Bank Connections</Text>
             <View style={styles.sectionContainer}>
-              {user.bankConnections && user.bankConnections.length > 0 ? (
-                user.bankConnections.map((connection: any) => (
+              {user && user.bankConnections.length > 0 ? (
+                user.bankConnections.map((connection: BankConnection) => (
                   <View key={connection.id} style={styles.bankConnection}>
                     <Text style={styles.bankReference}>
                       {connection.reference}
@@ -175,7 +169,7 @@ export default function Profile() {
                   finances.
                 </Text>
               )}
-              {user.bankConnections && user.bankConnections.length > 0 && (
+              {user && user.bankConnections.length > 0 && (
                 <TouchableOpacity
                   style={styles.updateButton}
                   onPress={handleUpdateBankConnections}
@@ -195,7 +189,6 @@ export default function Profile() {
               >
                 <Text style={styles.actionButtonText}>Logout</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[styles.actionButton, styles.dangerButton]}
                 onPress={handleDeleteAccount}

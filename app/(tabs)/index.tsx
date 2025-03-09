@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axiosInstance from "../../axiosInstance";
+import axiosInstance from "../../api/axiosInstance";
 import Colors from "@/constants/Colors";
 import { PieChart } from "react-native-chart-kit";
 

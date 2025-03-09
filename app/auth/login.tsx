@@ -9,9 +9,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import axiosInstance from "@/axiosInstance";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
+import { login } from "@/api/auth";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -19,19 +18,8 @@ export default function Login() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    const credentials = btoa(`${username}:${password}`);
     try {
-      const response = await axiosInstance.post(
-        "/token",
-        {},
-        {
-          headers: {
-            Authorization: `Basic ${credentials}`,
-          },
-        }
-      );
-      await AsyncStorage.setItem("token", response.data);
-      await AsyncStorage.setItem("username", username);
+      await login(username, password);
       router.replace("/");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message;

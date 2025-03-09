@@ -9,9 +9,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import axiosInstance from "../../axiosInstance";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
+import { register } from "@/api/auth";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -21,13 +20,8 @@ export default function Register() {
 
   const handleRegister = async () => {
     try {
-      const response = await axiosInstance.post("/users", {
-        username,
-        password,
-        name,
-      });
-      await AsyncStorage.setItem("username", username);
-      Alert.alert("Registration Successful", `User ID: ${response.data.id}`);
+      const response = await register(username, password, name);
+      Alert.alert("Registration Successful", `User ID: ${response.id}`);
       router.push("/auth/login");
     } catch (error: any) {
       Alert.alert("Registration Failed", error.message);
