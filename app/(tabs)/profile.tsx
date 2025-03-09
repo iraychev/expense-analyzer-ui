@@ -15,6 +15,7 @@ import Colors from "@/constants/Colors";
 import { fetchUser, deleteUser, updateBankConnections } from "@/api/user";
 import { User } from "@/interface/User";
 import { BankConnection } from "@/interface/BankConnection";
+import Head from "expo-router/head";
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
@@ -102,108 +103,115 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>👤 User Profile</Text>
-          <Text style={styles.subtitle}>
-            Manage your account and connections
-          </Text>
-        </View>
+    <>
+      <Head>
+        <title>Profile - Expense Analyzer</title>
+      </Head>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>👤 User Profile</Text>
+            <Text style={styles.subtitle}>
+              Manage your account and connections
+            </Text>
+          </View>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={Colors.primary}
-            style={styles.loader}
-          />
-        ) : (
-          <>
-            <Text style={styles.pageSection}>Account Information</Text>
-            <View style={styles.sectionContainer}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Name</Text>
-                <Text style={styles.infoValue}>{user?.name}</Text>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={styles.loader}
+            />
+          ) : (
+            <>
+              <Text style={styles.pageSection}>Account Information</Text>
+              <View style={styles.sectionContainer}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Name</Text>
+                  <Text style={styles.infoValue}>{user?.name}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Username</Text>
+                  <Text style={styles.infoValue}>{user?.username}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoValue}>{user?.email}</Text>
+                </View>
               </View>
-              <View style={styles.divider} />
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Username</Text>
-                <Text style={styles.infoValue}>{user?.username}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{user?.email}</Text>
-              </View>
-            </View>
 
-            <Text style={styles.pageSection}>Bank Connections</Text>
-            <View style={styles.sectionContainer}>
-              {user && user.bankConnections.length > 0 ? (
-                user.bankConnections.map((connection: BankConnection) => (
-                  <View key={connection.id} style={styles.bankConnection}>
-                    <Text style={styles.bankReference}>
-                      {connection.reference}
-                    </Text>
-                    <View style={styles.bankDetails}>
-                      <View style={styles.bankDetailItem}>
-                        <Text style={styles.bankDetailLabel}>Institution</Text>
-                        <Text style={styles.bankDetailValue}>
-                          {connection.institutionName}
-                        </Text>
-                      </View>
-                      <View style={styles.bankDetailItem}>
-                        <Text style={styles.bankDetailLabel}>
-                          Requisition ID
-                        </Text>
-                        <Text style={styles.bankDetailValue}>
-                          {connection.requisitionId}
-                        </Text>
+              <Text style={styles.pageSection}>Bank Connections</Text>
+              <View style={styles.sectionContainer}>
+                {user && user.bankConnections.length > 0 ? (
+                  user.bankConnections.map((connection: BankConnection) => (
+                    <View key={connection.id} style={styles.bankConnection}>
+                      <Text style={styles.bankReference}>
+                        {connection.reference}
+                      </Text>
+                      <View style={styles.bankDetails}>
+                        <View style={styles.bankDetailItem}>
+                          <Text style={styles.bankDetailLabel}>
+                            Institution
+                          </Text>
+                          <Text style={styles.bankDetailValue}>
+                            {connection.institutionName}
+                          </Text>
+                        </View>
+                        <View style={styles.bankDetailItem}>
+                          <Text style={styles.bankDetailLabel}>
+                            Requisition ID
+                          </Text>
+                          <Text style={styles.bankDetailValue}>
+                            {connection.requisitionId}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.noData}>
-                  No bank connections available. Add a connection to track your
-                  finances.
-                </Text>
-              )}
-              {user && user.bankConnections.length > 0 && (
+                  ))
+                ) : (
+                  <Text style={styles.noData}>
+                    No bank connections available. Add a connection to track
+                    your finances.
+                  </Text>
+                )}
+                {user && user.bankConnections.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.updateButton}
+                    onPress={handleUpdateBankConnections}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      Update Bank Connections
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text style={styles.pageSection}>Account Actions</Text>
+              <View style={styles.sectionContainer}>
                 <TouchableOpacity
-                  style={styles.updateButton}
-                  onPress={handleUpdateBankConnections}
+                  style={styles.actionButton}
+                  onPress={handleLogout}
                 >
-                  <Text style={styles.actionButtonText}>
-                    Update Bank Connections
+                  <Text style={styles.actionButtonText}>Logout</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.dangerButton]}
+                  onPress={handleDeleteAccount}
+                >
+                  <Text
+                    style={[styles.actionButtonText, styles.dangerButtonText]}
+                  >
+                    Delete Account
                   </Text>
                 </TouchableOpacity>
-              )}
-            </View>
-
-            <Text style={styles.pageSection}>Account Actions</Text>
-            <View style={styles.sectionContainer}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleLogout}
-              >
-                <Text style={styles.actionButtonText}>Logout</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.dangerButton]}
-                onPress={handleDeleteAccount}
-              >
-                <Text
-                  style={[styles.actionButtonText, styles.dangerButtonText]}
-                >
-                  Delete Account
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 

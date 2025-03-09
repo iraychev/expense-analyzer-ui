@@ -17,6 +17,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
 import { Transaction } from "@/interface/Transaction";
 import { fetchTransactions } from "@/api/transaction";
+import Head from "expo-router/head";
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -144,181 +145,186 @@ export default function Transactions() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>💸 Transactions</Text>
-          <Text style={styles.subtitle}>Track your financial activity</Text>
-        </View>
+    <>
+      <Head>
+        <title>Your Transactions - Expense Analyzer</title>
+      </Head>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>💸 Transactions</Text>
+            <Text style={styles.subtitle}>Track your financial activity</Text>
+          </View>
 
-        <View style={styles.filtersRow}>
-          <Text style={styles.pageSection}>Transaction History</Text>
-          <TouchableOpacity
-            onPress={openFilterModal}
-            style={styles.filterButton}
-          >
-            <FontAwesome name="filter" size={18} color="#fff" />
-            <Text style={styles.filterButtonText}>Filter</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.filtersRow}>
+            <Text style={styles.pageSection}>Transaction History</Text>
+            <TouchableOpacity
+              onPress={openFilterModal}
+              style={styles.filterButton}
+            >
+              <FontAwesome name="filter" size={18} color="#fff" />
+              <Text style={styles.filterButtonText}>Filter</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.monthPickerContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ref={scrollViewRef}
-          >
-            {months.map((month) => (
-              <TouchableOpacity
-                key={month}
-                onPress={() => setSelectedMonth(month)}
-                style={[
-                  styles.monthOption,
-                  selectedMonth === month && styles.selectedMonth,
-                ]}
-              >
-                <Text
+          <View style={styles.monthPickerContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              ref={scrollViewRef}
+            >
+              {months.map((month) => (
+                <TouchableOpacity
+                  key={month}
+                  onPress={() => setSelectedMonth(month)}
                   style={[
-                    styles.monthText,
-                    selectedMonth === month && styles.selectedMonthText,
+                    styles.monthOption,
+                    selectedMonth === month && styles.selectedMonth,
                   ]}
                 >
-                  {month}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <Modal
-          visible={filterModalVisible}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Filter Transactions</Text>
-              <Text style={styles.filterLabel}>Category</Text>
-              <RNPickerSelect
-                onValueChange={(value: string) => setTempCategory(value)}
-                items={[
-                  { label: "All Categories", value: "" },
-                  ...categories.map((category) => ({
-                    label: category,
-                    value: category,
-                  })),
-                ]}
-                style={pickerSelectStyles}
-                value={tempCategory}
-                useNativeAndroidPickerStyle={false}
-                placeholder={{ label: "Select a category", value: null }}
-              />
-
-              <Text style={styles.filterLabel}>Transaction Type</Text>
-              <View style={styles.toggleContainer}>
-                {["all", "income", "expense"].map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    onPress={() =>
-                      setTempType(type as "all" | "income" | "expense")
-                    }
+                  <Text
                     style={[
-                      styles.toggleButton,
-                      tempType === type && styles.selectedToggle,
+                      styles.monthText,
+                      selectedMonth === month && styles.selectedMonthText,
                     ]}
                   >
-                    <Text
+                    {month}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <Modal
+            visible={filterModalVisible}
+            animationType="slide"
+            transparent={true}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Filter Transactions</Text>
+                <Text style={styles.filterLabel}>Category</Text>
+                <RNPickerSelect
+                  onValueChange={(value: string) => setTempCategory(value)}
+                  items={[
+                    { label: "All Categories", value: "" },
+                    ...categories.map((category) => ({
+                      label: category,
+                      value: category,
+                    })),
+                  ]}
+                  style={pickerSelectStyles}
+                  value={tempCategory}
+                  useNativeAndroidPickerStyle={false}
+                  placeholder={{ label: "Select a category", value: null }}
+                />
+
+                <Text style={styles.filterLabel}>Transaction Type</Text>
+                <View style={styles.toggleContainer}>
+                  {["all", "income", "expense"].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      onPress={() =>
+                        setTempType(type as "all" | "income" | "expense")
+                      }
                       style={[
-                        styles.toggleText,
-                        tempType === type && styles.selectedToggleText,
+                        styles.toggleButton,
+                        tempType === type && styles.selectedToggle,
                       ]}
                     >
-                      {type === "income"
-                        ? "Income"
-                        : type === "expense"
-                        ? "Expense"
-                        : "All"}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.toggleText,
+                          tempType === type && styles.selectedToggleText,
+                        ]}
+                      >
+                        {type === "income"
+                          ? "Income"
+                          : type === "expense"
+                          ? "Expense"
+                          : "All"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    onPress={applyFilters}
+                    style={styles.modalButton}
+                  >
+                    <Text style={styles.modalButtonText}>Apply Filters</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  onPress={applyFilters}
-                  style={styles.modalButton}
-                >
-                  <Text style={styles.modalButtonText}>Apply Filters</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setFilterModalVisible(false)}
-                  style={[styles.modalButton, styles.cancelButton]}
-                >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setFilterModalVisible(false)}
+                    style={[styles.modalButton, styles.cancelButton]}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={Colors.primary}
-            style={styles.loader}
-          />
-        ) : (
-          <FlatList
-            data={sortedTransactions}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={() => (
-              <View style={styles.noTransactions}>
-                <FontAwesome
-                  name="search"
-                  size={40}
-                  color={Colors.muted}
-                  style={styles.noDataIcon}
-                />
-                <Text style={styles.noTransactionsText}>
-                  No transactions found for the selected filters.
-                </Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.transaction}>
-                <View style={styles.iconContainer}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={styles.loader}
+            />
+          ) : (
+            <FlatList
+              data={sortedTransactions}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContainer}
+              ListEmptyComponent={() => (
+                <View style={styles.noTransactions}>
                   <FontAwesome
-                    name={getCategoryIcon(item.category)}
-                    size={24}
-                    color={Colors.primary}
+                    name="search"
+                    size={40}
+                    color={Colors.muted}
+                    style={styles.noDataIcon}
                   />
+                  <Text style={styles.noTransactionsText}>
+                    No transactions found for the selected filters.
+                  </Text>
                 </View>
-                <View style={styles.transactionDetails}>
-                  <View style={styles.transactionHeader}>
-                    <Text style={styles.category}>{item.category}</Text>
-                    <Text
-                      style={[
-                        styles.amount,
-                        { color: item.amount < 0 ? "#FF3B30" : "#34C759" },
-                      ]}
-                    >
-                      {item.amount < 0 ? "- " : "+ "}
-                      {Math.abs(item.amount)} {item.currency}
+              )}
+              renderItem={({ item }) => (
+                <View style={styles.transaction}>
+                  <View style={styles.iconContainer}>
+                    <FontAwesome
+                      name={getCategoryIcon(item.category)}
+                      size={24}
+                      color={Colors.primary}
+                    />
+                  </View>
+                  <View style={styles.transactionDetails}>
+                    <View style={styles.transactionHeader}>
+                      <Text style={styles.category}>{item.category}</Text>
+                      <Text
+                        style={[
+                          styles.amount,
+                          { color: item.amount < 0 ? "#FF3B30" : "#34C759" },
+                        ]}
+                      >
+                        {item.amount < 0 ? "- " : "+ "}
+                        {Math.abs(item.amount)} {item.currency}
+                      </Text>
+                    </View>
+                    <Text style={styles.description} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                    <Text style={styles.valueDate}>
+                      {formatDate(item.valueDate)}
                     </Text>
                   </View>
-                  <Text style={styles.description} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  <Text style={styles.valueDate}>
-                    {formatDate(item.valueDate)}
-                  </Text>
                 </View>
-              </View>
-            )}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+              )}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

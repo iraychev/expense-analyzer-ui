@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import Colors from "@/constants/Colors";
 import { login } from "@/api/auth";
+import Head from "expo-router/head";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -28,28 +29,33 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.label}>Username:</Text>
-      <TextInput
-        style={styles.input}
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-      <Text style={styles.label}>Password:</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-      />
-      <Button title="Login" onPress={handleLogin} />
-      <TouchableOpacity onPress={() => router.push("/auth/register")}>
-        <Text style={styles.link}>Don't have an account? Register here</Text>
-      </TouchableOpacity>
-    </View>
+    <>
+      <Head>
+        <title>Login - Expense Analyzer</title>
+      </Head>
+      <View style={styles.container}>
+        <Text style={styles.title}>Login</Text>
+        <Text style={styles.label}>Username:</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
+        <Text style={styles.label}>Password:</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <Button title="Login" onPress={handleLogin} />
+        <TouchableOpacity onPress={() => router.push("/auth/register")}>
+          <Text style={styles.link}>Don't have an account? Register here</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }
 

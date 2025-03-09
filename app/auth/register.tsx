@@ -8,6 +8,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
+import Head from "expo-router/head";
 import { useRouter } from "expo-router";
 import Colors from "@/constants/Colors";
 import { register } from "@/api/auth";
@@ -29,30 +30,35 @@ export default function Register() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
-      <Text style={styles.label}>Name:</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
-      <Text style={styles.label}>Username:</Text>
-      <TextInput
-        style={styles.input}
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-      <Text style={styles.label}>Password:</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-      />
-      <Button title="Register" onPress={handleRegister} />
-      <TouchableOpacity onPress={() => router.push("/auth/login")}>
-        <Text style={styles.link}>Already have an account? Login here</Text>
-      </TouchableOpacity>
-    </View>
+    <>
+      <Head>
+        <title>Register - Expense Analyzer</title>
+      </Head>
+      <View style={styles.container}>
+        <Text style={styles.title}>Register</Text>
+        <Text style={styles.label}>Name:</Text>
+        <TextInput style={styles.input} value={name} onChangeText={setName} />
+        <Text style={styles.label}>Username:</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
+        <Text style={styles.label}>Password:</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <Button title="Register" onPress={handleRegister} />
+        <TouchableOpacity onPress={() => router.push("/auth/login")}>
+          <Text style={styles.link}>Already have an account? Login here</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }
 
