@@ -65,8 +65,8 @@ export default function Profile() {
       "Are you sure you want to delete your account? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
+        {
+          text: "Delete",
           style: "destructive",
           onPress: async () => {
             const username = await AsyncStorage.getItem("username");
@@ -84,10 +84,27 @@ export default function Profile() {
             } catch (error: any) {
               Alert.alert("Failed to delete account", error.message);
             }
-          }
-        }
+          },
+        },
       ]
     );
+  };
+
+  const handleUpdateBankConnections = async () => {
+    const username = await AsyncStorage.getItem("username");
+    if (!username) {
+      Alert.alert("Error", "Username not found in local storage");
+      return;
+    }
+    try {
+      const response = await axiosInstance.put(
+        `/users/username/${username}/bank-connections/update`
+      );
+      setUser(response.data);
+      Alert.alert("Success", "Bank connections updated successfully");
+    } catch (error: any) {
+      Alert.alert("Update Failed", error.message);
+    }
   };
 
   return (
@@ -131,40 +148,61 @@ export default function Profile() {
               {user.bankConnections && user.bankConnections.length > 0 ? (
                 user.bankConnections.map((connection: any) => (
                   <View key={connection.id} style={styles.bankConnection}>
-                    <Text style={styles.bankReference}>{connection.reference}</Text>
+                    <Text style={styles.bankReference}>
+                      {connection.reference}
+                    </Text>
                     <View style={styles.bankDetails}>
                       <View style={styles.bankDetailItem}>
                         <Text style={styles.bankDetailLabel}>Institution</Text>
-                        <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
+                        <Text style={styles.bankDetailValue}>
+                          {connection.institutionName}
+                        </Text>
                       </View>
                       <View style={styles.bankDetailItem}>
-                        <Text style={styles.bankDetailLabel}>Requisition ID</Text>
-                        <Text style={styles.bankDetailValue}>{connection.requisitionId}</Text>
+                        <Text style={styles.bankDetailLabel}>
+                          Requisition ID
+                        </Text>
+                        <Text style={styles.bankDetailValue}>
+                          {connection.requisitionId}
+                        </Text>
                       </View>
                     </View>
                   </View>
                 ))
               ) : (
                 <Text style={styles.noData}>
-                  No bank connections available. Add a connection to track your finances.
+                  No bank connections available. Add a connection to track your
+                  finances.
                 </Text>
+              )}
+              {user.bankConnections && user.bankConnections.length > 0 && (
+                <TouchableOpacity
+                  style={styles.updateButton}
+                  onPress={handleUpdateBankConnections}
+                >
+                  <Text style={styles.actionButtonText}>
+                    Update Bank Connections
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
 
             <Text style={styles.pageSection}>Account Actions</Text>
             <View style={styles.sectionContainer}>
-              <TouchableOpacity 
-                style={styles.actionButton} 
+              <TouchableOpacity
+                style={styles.actionButton}
                 onPress={handleLogout}
               >
                 <Text style={styles.actionButtonText}>Logout</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.dangerButton]} 
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.dangerButton]}
                 onPress={handleDeleteAccount}
               >
-                <Text style={[styles.actionButtonText, styles.dangerButtonText]}>
+                <Text
+                  style={[styles.actionButtonText, styles.dangerButtonText]}
+                >
                   Delete Account
                 </Text>
               </TouchableOpacity>
@@ -177,18 +215,18 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: Colors.background 
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  container: { 
-    flexGrow: 1, 
-    padding: 20, 
-    backgroundColor: Colors.background 
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: Colors.background,
   },
-  headerContainer: { 
-    alignItems: "center", 
-    marginBottom: 25 
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 25,
   },
   title: {
     fontSize: 28,
@@ -197,10 +235,10 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: "center",
   },
-  subtitle: { 
-    fontSize: 18, 
-    color: Colors.text, 
-    textAlign: "center" 
+  subtitle: {
+    fontSize: 18,
+    color: Colors.text,
+    textAlign: "center",
   },
   pageSection: {
     fontSize: 22,
@@ -296,8 +334,8 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     color: "#FF3B30",
   },
-  loader: { 
-    marginTop: 40 
+  loader: {
+    marginTop: 40,
   },
   noData: {
     fontSize: 16,
@@ -305,5 +343,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 30,
     fontStyle: "italic",
+  },
+  updateButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 10,
   },
 });

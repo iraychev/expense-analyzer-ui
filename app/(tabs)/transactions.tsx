@@ -113,6 +113,10 @@ export default function Transactions() {
     return categoryMatch && typeMatch && monthMatch;
   });
 
+  const sortedTransactions = [...filteredTransactions].sort(
+    (a, b) => new Date(b.valueDate).getTime() - new Date(a.valueDate).getTime()
+  );
+
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -165,7 +169,10 @@ export default function Transactions() {
 
         <View style={styles.filtersRow}>
           <Text style={styles.pageSection}>Transaction History</Text>
-          <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
+          <TouchableOpacity
+            onPress={openFilterModal}
+            style={styles.filterButton}
+          >
             <FontAwesome name="filter" size={18} color="#fff" />
             <Text style={styles.filterButtonText}>Filter</Text>
           </TouchableOpacity>
@@ -186,10 +193,10 @@ export default function Transactions() {
                   selectedMonth === month && styles.selectedMonth,
                 ]}
               >
-                <Text 
+                <Text
                   style={[
                     styles.monthText,
-                    selectedMonth === month && styles.selectedMonthText
+                    selectedMonth === month && styles.selectedMonthText,
                   ]}
                 >
                   {month}
@@ -222,7 +229,7 @@ export default function Transactions() {
                 useNativeAndroidPickerStyle={false}
                 placeholder={{ label: "Select a category", value: null }}
               />
-              
+
               <Text style={styles.filterLabel}>Transaction Type</Text>
               <View style={styles.toggleContainer}>
                 {["all", "income", "expense"].map((type) => (
@@ -236,10 +243,10 @@ export default function Transactions() {
                       tempType === type && styles.selectedToggle,
                     ]}
                   >
-                    <Text 
+                    <Text
                       style={[
                         styles.toggleText,
-                        tempType === type && styles.selectedToggleText
+                        tempType === type && styles.selectedToggleText,
                       ]}
                     >
                       {type === "income"
@@ -277,12 +284,17 @@ export default function Transactions() {
           />
         ) : (
           <FlatList
-            data={filteredTransactions}
+            data={sortedTransactions}
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={() => (
               <View style={styles.noTransactions}>
-                <FontAwesome name="search" size={40} color={Colors.muted} style={styles.noDataIcon} />
+                <FontAwesome
+                  name="search"
+                  size={40}
+                  color={Colors.muted}
+                  style={styles.noDataIcon}
+                />
                 <Text style={styles.noTransactionsText}>
                   No transactions found for the selected filters.
                 </Text>
@@ -313,7 +325,9 @@ export default function Transactions() {
                   <Text style={styles.description} numberOfLines={2}>
                     {item.description}
                   </Text>
-                  <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
+                  <Text style={styles.valueDate}>
+                    {formatDate(item.valueDate)}
+                  </Text>
                 </View>
               </View>
             )}
@@ -325,18 +339,18 @@ export default function Transactions() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: Colors.background 
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: Colors.background,
   },
-  headerContainer: { 
-    alignItems: "center", 
-    marginBottom: 20 
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -345,10 +359,10 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: "center",
   },
-  subtitle: { 
-    fontSize: 18, 
-    color: Colors.text, 
-    textAlign: "center" 
+  subtitle: {
+    fontSize: 18,
+    color: Colors.text,
+    textAlign: "center",
   },
   filtersRow: {
     flexDirection: "row",
@@ -561,8 +575,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
   },
-  loader: { 
-    marginTop: 40 
+  loader: {
+    marginTop: 40,
   },
 });
 

@@ -135,14 +135,9 @@ export default function Index() {
                 (currentMonthExpenseByCategory[tx.category] || 0) + absAmount;
             }
 
-            if (
-              txDate.getFullYear() === lastMonthYear &&
-              txDate.getMonth() === lastMonthMonth
-            ) {
+            if (txDate >= currentMonthStart && txDate <= now) {
               chartExpenseByCategory[tx.category] =
                 (chartExpenseByCategory[tx.category] || 0) + absAmount;
-              lastMonthExpenseByCategory[tx.category] =
-                (lastMonthExpenseByCategory[tx.category] || 0) + absAmount;
             }
           }
         });
@@ -293,7 +288,7 @@ export default function Index() {
           <>
             <Text style={styles.pageSection}>Spending Insights</Text>
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>📊 Last Month Breakdown</Text>
+              <Text style={styles.sectionTitle}>📊 This Month Breakdown</Text>
               {chartData.length > 0 ? (
                 <View style={styles.chartWrapper}>
                   <PieChart
@@ -323,7 +318,7 @@ export default function Index() {
                         />
                         <Text style={styles.legendLabel}>
                           <Text style={styles.legendCategory}>{item.name}</Text>
-                          {`: ${item.amount}`}
+                          {`: ${item.amount} `}
                         </Text>
                       </View>
                     ))}
