@@ -19,6 +19,7 @@ import Head from "expo-router/head";
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
+  const [expandedConnections, setExpandedConnections] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
@@ -58,33 +59,29 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = async () => {
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            const username = await AsyncStorage.getItem("username");
-            if (!username) {
-              Alert.alert("Error", "Username not found in local storage");
-              return;
-            }
-            try {
-              await deleteUser(username);
-              await AsyncStorage.removeItem("token");
-              await AsyncStorage.removeItem("username");
-              Alert.alert("Account Deleted", "Your account has been deleted.");
-              router.push("/auth/register");
-            } catch (error: any) {
-              Alert.alert("Failed to delete account", error.message);
-            }
-          },
+    Alert.alert("Delete Account", "Are you sure you want to delete your account? This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const username = await AsyncStorage.getItem("username");
+          if (!username) {
+            Alert.alert("Error", "Username not found in local storage");
+            return;
+          }
+          try {
+            await deleteUser(username);
+            await AsyncStorage.removeItem("token");
+            await AsyncStorage.removeItem("username");
+            Alert.alert("Account Deleted", "Your account has been deleted.");
+            router.push("/auth/register");
+          } catch (error: any) {
+            Alert.alert("Failed to delete account", error.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleUpdateBankConnections = async () => {
@@ -102,6 +99,12 @@ export default function Profile() {
     }
   };
 
+  const toggleExpand = (connectionId: number) => {
+    setExpandedConnections((prev) =>
+      prev.includes(connectionId) ? prev.filter((id) => id !== connectionId) : [...prev, connectionId]
+    );
+  };
+
   return (
     <>
       <Head>
@@ -111,17 +114,11 @@ export default function Profile() {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>👤 User Profile</Text>
-            <Text style={styles.subtitle}>
-              Manage your account and connections
-            </Text>
+            <Text style={styles.subtitle}>Manage your account and connections</Text>
           </View>
 
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={Colors.primary}
-              style={styles.loader}
-            />
+            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
           ) : (
             <>
               <Text style={styles.pageSection}>Account Information</Text>
@@ -147,64 +144,57 @@ export default function Profile() {
                 {user && user.bankConnections.length > 0 ? (
                   user.bankConnections.map((connection: BankConnection) => (
                     <View key={connection.id} style={styles.bankConnection}>
-                      <Text style={styles.bankReference}>
-                        {connection.reference}
-                      </Text>
-                      <View style={styles.bankDetails}>
-                        <View style={styles.bankDetailItem}>
-                          <Text style={styles.bankDetailLabel}>
-                            Institution
-                          </Text>
-                          <Text style={styles.bankDetailValue}>
-                            {connection.institutionName}
-                          </Text>
-                        </View>
-                        <View style={styles.bankDetailItem}>
-                          <Text style={styles.bankDetailLabel}>
-                            Requisition ID
-                          </Text>
-                          <Text style={styles.bankDetailValue}>
-                            {connection.requisitionId}
-                          </Text>
-                        </View>
-                      </View>
+                      <TouchableOpacity onPress={() => toggleExpand(connection.id)} style={styles.bankConnectionHeader}>
+                        <Text style={styles.bankReference}>{connection.reference}</Text>
+                        <Text style={styles.collapseIndicator}>
+                          {expandedConnections.includes(connection.id) ? "-" : "+"}
+                        </Text>
+                      </TouchableOpacity>
+                      {expandedConnections.includes(connection.id) && (
+                        <>
+                          <View style={styles.bankDetails}>
+                            <View style={styles.bankDetailItem}>
+                              <Text style={styles.bankDetailLabel}>Institution</Text>
+                              <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
+                            </View>
+                            <View style={styles.bankDetailItem}>
+                              <Text style={styles.bankDetailLabel}>Requisition ID</Text>
+                              <Text style={styles.bankDetailValue}>{connection.requisitionId}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.accountDetails}>
+                            {connection.accounts.map((account, idx) => (
+                              <View key={idx} style={styles.accountItem}>
+                                <Text style={styles.accountLabel}>Account id:</Text>
+                                <Text style={styles.accountValue}>{account.id || "N/A"}</Text>
+                                <Text style={styles.accountLabel}>IBAN:</Text>
+                                <Text style={styles.accountValue}>{account.iban || "N/A"}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </>
+                      )}
                     </View>
                   ))
                 ) : (
                   <Text style={styles.noData}>
-                    No bank connections available. Add a connection to track
-                    your finances.
+                    No bank connections available. Add a connection to track your finances.
                   </Text>
                 )}
                 {user && user.bankConnections.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.updateButton}
-                    onPress={handleUpdateBankConnections}
-                  >
-                    <Text style={styles.actionButtonText}>
-                      Update Bank Connections
-                    </Text>
+                  <TouchableOpacity style={styles.updateButton} onPress={handleUpdateBankConnections}>
+                    <Text style={styles.actionButtonText}>Update Bank Connections</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <Text style={styles.pageSection}>Account Actions</Text>
               <View style={styles.sectionContainer}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleLogout}
-                >
+                <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
                   <Text style={styles.actionButtonText}>Logout</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.dangerButton]}
-                  onPress={handleDeleteAccount}
-                >
-                  <Text
-                    style={[styles.actionButtonText, styles.dangerButtonText]}
-                  >
-                    Delete Account
-                  </Text>
+                <TouchableOpacity style={[styles.actionButton, styles.dangerButton]} onPress={handleDeleteAccount}>
+                  <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Delete Account</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -351,5 +341,34 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     marginTop: 10,
+  },
+  accountDetails: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#eef",
+    borderRadius: 10,
+  },
+  accountItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+  accountLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  accountValue: {
+    fontSize: 14,
+    color: Colors.primary,
+  },
+  bankConnectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  collapseIndicator: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Colors.primary,
   },
 });
