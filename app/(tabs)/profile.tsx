@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
 import { fetchUser, deleteUser, updateBankConnections } from "@/api/user";
+import { linkBankConnection } from "@/api/bankConnection";
 import { User } from "@/interface/User";
 import { BankConnection } from "@/interface/BankConnection";
 import Head from "expo-router/head";
@@ -21,6 +22,7 @@ export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [expandedConnections, setExpandedConnections] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [pendingRequisitionId, setPendingRequisitionId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -50,6 +52,16 @@ export default function Profile() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const checkPending = async () => {
+      const pending = await AsyncStorage.getItem("pendingRequisitionId");
+      if (pending) {
+        setPendingRequisitionId(pending);
+      }
+    };
+    checkPending();
   }, []);
 
   const handleLogout = async () => {
@@ -183,9 +195,43 @@ export default function Profile() {
                 )}
                 {user && user.bankConnections.length > 0 && (
                   <TouchableOpacity style={styles.updateButton} onPress={handleUpdateBankConnections}>
-                    <Text style={styles.actionButtonText}>Update Bank Connections</Text>
+                    <Text style={styles.actionButtonText}>Sync Bank Connections</Text>
                   </TouchableOpacity>
                 )}
+                {user && user.bankConnections.length === 0 && (
+                  <Text style={styles.noData}>
+                    No bank connections available. Add a connection to track your finances.
+                  </Text>
+                )}
+                <View style={{ marginTop: 15 }}>
+                  <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/modals/addBankConnection")}>
+                    <Text style={styles.actionButtonText}>Add Bank Connection</Text>
+                  </TouchableOpacity>
+                  {pendingRequisitionId && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, { marginTop: 10 }]}
+                      onPress={async () => {
+                        const username = await AsyncStorage.getItem("username");
+                        if (!username) {
+                          Alert.alert("Error", "Username not found in local storage");
+                          return;
+                        }
+                        try {
+                          await linkBankConnection(username, pendingRequisitionId);
+                          Alert.alert("Success", "Bank connection linked successfully.");
+                          await AsyncStorage.removeItem("pendingRequisitionId");
+                          setPendingRequisitionId(null);
+                          const updatedUser = await updateBankConnections(username);
+                          setUser(updatedUser);
+                        } catch (error: any) {
+                          Alert.alert("Error", error.message);
+                        }
+                      }}
+                    >
+                      <Text style={styles.actionButtonText}>Finalize Linking</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               <Text style={styles.pageSection}>Account Actions</Text>
