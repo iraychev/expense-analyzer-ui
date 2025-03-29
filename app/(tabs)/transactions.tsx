@@ -152,7 +152,7 @@ export default function Transactions() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>💸 Transactions</Text>
+            <Text style={styles.title}>Transactions</Text>
             <Text style={styles.subtitle}>Track your financial activity</Text>
           </View>
 

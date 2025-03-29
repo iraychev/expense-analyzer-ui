@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
 import { fetchUser, deleteUser, updateBankConnections } from "@/api/user";
-import { linkBankConnection } from "@/api/bankConnection";
+import { linkBankConnection, deleteBankConnection } from "@/api/bankConnection";
 import { User } from "@/interface/User";
 import { BankConnection } from "@/interface/BankConnection";
 import Head from "expo-router/head";
@@ -111,6 +111,29 @@ export default function Profile() {
     }
   };
 
+  const handleDeleteConnection = async (requisitionId: string) => {
+    Alert.alert("Delete Connection", "Are you sure you want to delete this bank connection?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteBankConnection(requisitionId);
+            Alert.alert("Success", "Bank connection deleted successfully.");
+            const username = await AsyncStorage.getItem("username");
+            if (username) {
+              const updatedUser = await updateBankConnections(username);
+              setUser(updatedUser);
+            }
+          } catch (error: any) {
+            Alert.alert("Error", error.message);
+          }
+        },
+      },
+    ]);
+  };
+
   const toggleExpand = (connectionId: number) => {
     setExpandedConnections((prev) =>
       prev.includes(connectionId) ? prev.filter((id) => id !== connectionId) : [...prev, connectionId]
@@ -125,7 +148,7 @@ export default function Profile() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>👤 User Profile</Text>
+            <Text style={styles.title}>User Profile</Text>
             <Text style={styles.subtitle}>Manage your account and connections</Text>
           </View>
 
@@ -184,6 +207,12 @@ export default function Profile() {
                               </View>
                             ))}
                           </View>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleDeleteConnection(connection.requisitionId)}
+                          >
+                            <Text style={styles.actionButtonText}>Delete</Text>
+                          </TouchableOpacity>
                         </>
                       )}
                     </View>
@@ -204,7 +233,10 @@ export default function Profile() {
                   </Text>
                 )}
                 <View style={{ marginTop: 15 }}>
-                  <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/modals/addBankConnection")}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/modals/addBankConnection")}
+                  >
                     <Text style={styles.actionButtonText}>Add Bank Connection</Text>
                   </TouchableOpacity>
                   {pendingRequisitionId && (
@@ -325,11 +357,21 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary,
   },
+  bankConnectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   bankReference: {
     fontSize: 18,
     fontWeight: "bold",
     color: Colors.primary,
     marginBottom: 10,
+  },
+  collapseIndicator: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Colors.primary,
   },
   bankDetails: {
     backgroundColor: "#FFFFFF",
@@ -351,6 +393,25 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: Colors.text,
   },
+  accountDetails: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#eef",
+    borderRadius: 10,
+  },
+  accountItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+  accountLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  accountValue: {
+    fontSize: 14,
+    color: Colors.primary,
+  },
   actionButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
@@ -371,6 +432,20 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     color: "#FF3B30",
   },
+  updateButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  deleteButton: {
+    backgroundColor: "orangered",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
   loader: {
     marginTop: 40,
   },
@@ -380,41 +455,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 30,
     fontStyle: "italic",
-  },
-  updateButton: {
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  accountDetails: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: "#eef",
-    borderRadius: 10,
-  },
-  accountItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 5,
-  },
-  accountLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  accountValue: {
-    fontSize: 14,
-    color: Colors.primary,
-  },
-  bankConnectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  collapseIndicator: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: Colors.primary,
   },
 });

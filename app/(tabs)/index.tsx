@@ -277,7 +277,7 @@ export default function Index() {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.greeting}>{greeting}</Text>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>💳 Expense Analyzer</Text>
+            <Text style={styles.title}>Expense Analyzer</Text>
             <Text style={styles.subtitle}>
               Track and optimize your spending wisely
             </Text>
