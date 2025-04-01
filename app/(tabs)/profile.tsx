@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Colors from "@/constants/Colors";
+import { colors } from "@/constants/Colors";
 import { fetchUser, deleteUser, updateBankConnections } from "@/api/userService";
 import { linkBankConnection, deleteBankConnection } from "@/api/bankConnectionService";
 import { User } from "@/interface/User";
@@ -156,7 +156,7 @@ export default function Profile() {
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
           ) : (
             <>
               <Text style={styles.pageSection}>Account Information</Text>
@@ -290,12 +290,12 @@ export default function Profile() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   headerContainer: {
     alignItems: "center",
@@ -304,19 +304,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 5,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
-    color: Colors.text,
+    color: colors.text,
     textAlign: "center",
   },
   pageSection: {
     fontSize: 22,
     fontWeight: "bold",
-    color: Colors.accent,
+    color: colors.accent,
     marginTop: 10,
     marginBottom: 15,
     paddingLeft: 10,
@@ -341,12 +341,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: "600",
   },
   infoValue: {
     fontSize: 16,
-    color: Colors.primary,
+    color: colors.primary,
   },
   divider: {
     height: 1,
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginVertical: 10,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: colors.primary,
   },
   bankConnectionHeader: {
     flexDirection: "row",
@@ -369,13 +369,13 @@ const styles = StyleSheet.create({
   bankReference: {
     fontSize: 18,
     fontWeight: "bold",
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 10,
   },
   collapseIndicator: {
     fontSize: 18,
     fontWeight: "bold",
-    color: Colors.primary,
+    color: colors.primary,
   },
   bankDetails: {
     backgroundColor: "#FFFFFF",
@@ -389,13 +389,13 @@ const styles = StyleSheet.create({
   },
   bankDetailLabel: {
     fontSize: 14,
-    color: Colors.text,
+    color: colors.text,
     opacity: 0.8,
   },
   bankDetailValue: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.text,
+    color: colors.text,
   },
   accountDetails: {
     marginTop: 10,
@@ -414,10 +414,10 @@ const styles = StyleSheet.create({
   },
   accountValue: {
     fontSize: 14,
-    color: Colors.primary,
+    color: colors.primary,
   },
   actionButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
   },
   updateButton: {
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   noData: {
     fontSize: 16,
-    color: Colors.text,
+    color: colors.text,
     textAlign: "center",
     marginVertical: 30,
     fontStyle: "italic",

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  Alert,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -12,10 +11,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
-import Colors from "@/constants/Colors";
-import { Transaction } from "@/interface/Transaction";
+import { colors } from "@/constants/Colors";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 
@@ -205,7 +202,7 @@ export default function Transactions() {
           </Modal>
 
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
           ) : (
             <FlatList
               data={sortedTransactions}
@@ -213,14 +210,14 @@ export default function Transactions() {
               contentContainerStyle={styles.listContainer}
               ListEmptyComponent={() => (
                 <View style={styles.noTransactions}>
-                  <FontAwesome name="search" size={40} color={Colors.muted} style={styles.noDataIcon} />
+                  <FontAwesome name="search" size={40} color={colors.muted} style={styles.noDataIcon} />
                   <Text style={styles.noTransactionsText}>No transactions found for the selected filters.</Text>
                 </View>
               )}
               renderItem={({ item }) => (
                 <View style={styles.transaction}>
                   <View style={styles.iconContainer}>
-                    <FontAwesome name={getCategoryIcon(item.category)} size={24} color={Colors.primary} />
+                    <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
                   </View>
                   <View style={styles.transactionDetails}>
                     <View style={styles.transactionHeader}>
@@ -250,12 +247,12 @@ export default function Transactions() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   headerContainer: {
     alignItems: "center",
@@ -264,13 +261,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 5,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
-    color: Colors.text,
+    color: colors.text,
     textAlign: "center",
   },
   filtersRow: {
@@ -282,11 +279,11 @@ const styles = StyleSheet.create({
   pageSection: {
     fontSize: 22,
     fontWeight: "bold",
-    color: Colors.accent,
+    color: colors.accent,
     paddingLeft: 10,
   },
   filterButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 12,
@@ -322,11 +319,11 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 14,
-    color: Colors.text,
+    color: colors.text,
   },
   selectedMonth: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   selectedMonthText: {
     color: "#FFF",
@@ -354,13 +351,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: Colors.primary,
+    color: colors.primary,
   },
   filterLabel: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
-    color: Colors.accent,
+    color: colors.accent,
   },
   toggleContainer: {
     flexDirection: "row",
@@ -378,13 +375,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   selectedToggle: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   toggleText: {
     fontSize: 15,
     fontWeight: "500",
-    color: Colors.text,
+    color: colors.text,
   },
   selectedToggleText: {
     color: "#FFF",
@@ -398,7 +395,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     marginHorizontal: 5,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     alignItems: "center",
     shadowColor: "#000",
@@ -424,7 +421,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -452,7 +449,7 @@ const styles = StyleSheet.create({
   category: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.text,
+    color: colors.text,
   },
   amount: {
     fontSize: 16,
@@ -460,13 +457,13 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: Colors.text,
+    color: colors.text,
     opacity: 0.8,
     marginBottom: 4,
   },
   valueDate: {
     fontSize: 13,
-    color: Colors.muted,
+    color: colors.muted,
   },
   noTransactions: {
     flex: 1,
@@ -480,7 +477,7 @@ const styles = StyleSheet.create({
   },
   noTransactionsText: {
     fontSize: 16,
-    color: Colors.text,
+    color: colors.text,
     textAlign: "center",
     fontStyle: "italic",
   },
@@ -498,7 +495,7 @@ const pickerSelectStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 12,
-    color: Colors.text,
+    color: colors.text,
     paddingRight: 30,
     backgroundColor: "#fff",
     marginBottom: 20,
@@ -511,7 +508,7 @@ const pickerSelectStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 12,
-    color: Colors.text,
+    color: colors.text,
     paddingRight: 30,
     backgroundColor: "#fff",
     marginBottom: 20,

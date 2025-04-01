@@ -1,19 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, SafeAreaView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Colors from "@/constants/Colors";
+import {colors} from "@/constants/Colors";
 import { PieChart } from "react-native-chart-kit";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
-
-interface Transaction {
-  id: number;
-  amount: number;
-  currency: string;
-  valueDate: string;
-  category: string;
-  description: string;
-}
+import { colorPalette } from "@/constants/Colors";
 
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -21,19 +13,6 @@ const formatNumber = (num: number): string => {
     minimumFractionDigits: 0,
   }).format(num);
 };
-
-const colorPalette = [
-  "#FF6384",
-  "#36A2EB",
-  "#FFCE56",
-  "#4BC0C0",
-  "#9966FF",
-  "#FF9F40",
-  "#41B883",
-  "#E74C3C",
-  "#3498DB",
-  "#F1C40F",
-];
 
 export default function Index() {
   const { transactions, isLoading: loading } = useTransactions();
@@ -232,7 +211,7 @@ export default function Index() {
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
           ) : (
             <>
               <Text style={styles.pageSection}>Spending Insights</Text>
@@ -299,12 +278,12 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.background },
-  container: { flexGrow: 1, padding: 20, backgroundColor: Colors.background },
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flexGrow: 1, padding: 20, backgroundColor: colors.background },
   greeting: {
     fontSize: 24,
     fontWeight: "600",
-    color: Colors.accent,
+    color: colors.accent,
     marginBottom: 10,
     textAlign: "center",
   },
@@ -312,15 +291,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 5,
     textAlign: "center",
   },
-  subtitle: { fontSize: 18, color: Colors.text, textAlign: "center" },
+  subtitle: { fontSize: 18, color: colors.text, textAlign: "center" },
   pageSection: {
     fontSize: 22,
     fontWeight: "bold",
-    color: Colors.accent,
+    color: colors.accent,
     marginTop: 10,
     marginBottom: 15,
     paddingLeft: 10,
@@ -341,13 +320,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 15,
-    color: Colors.primary,
+    color: colors.primary,
     textAlign: "center",
   },
   loader: { marginTop: 40 },
   noData: {
     fontSize: 16,
-    color: Colors.text,
+    color: colors.text,
     textAlign: "center",
     marginVertical: 30,
     fontStyle: "italic",
@@ -372,7 +351,7 @@ const styles = StyleSheet.create({
   suggestionBox: {
     backgroundColor: "#F9F9F9",
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: colors.primary,
     borderRadius: 12,
     padding: 15,
     marginVertical: 12,
@@ -380,9 +359,9 @@ const styles = StyleSheet.create({
   tipPeriod: {
     fontSize: 12,
     fontWeight: "bold",
-    color: Colors.accent,
+    color: colors.accent,
     marginBottom: 6,
     letterSpacing: 1,
   },
-  suggestionText: { fontSize: 15, lineHeight: 22, color: Colors.text },
+  suggestionText: { fontSize: 15, lineHeight: 22, color: colors.text },
 });
