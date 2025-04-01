@@ -3,6 +3,7 @@ import { Slot, Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TransactionProvider } from "@/context/TransactionContext";
 
 export default function RootLayout() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -27,7 +28,9 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="auto" />
-      <Slot />
+      <TransactionProvider>
+        <Slot />
+      </TransactionProvider>
       {isLoggedIn ? null : <Redirect href="/auth/login" />}
     </>
   );

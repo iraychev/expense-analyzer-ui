@@ -1,18 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-  SafeAreaView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, SafeAreaView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axiosInstance from "../../api/axiosInstance";
 import Colors from "@/constants/Colors";
 import { PieChart } from "react-native-chart-kit";
 import Head from "expo-router/head";
+import { useTransactions } from "@/context/TransactionContext";
 
 interface Transaction {
   id: number;
@@ -44,17 +36,16 @@ const colorPalette = [
 ];
 
 export default function Index() {
+  const { transactions, isLoading: loading } = useTransactions();
   const [greeting, setGreeting] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
     const now = new Date();
     const hour = now.getHours();
-    const timeOfDay =
-      hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+    const timeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
     AsyncStorage.getItem("username").then((storedUsername) => {
       const name = storedUsername ? storedUsername : "";
       setGreeting(`Good ${timeOfDay}${name ? `, ${name}` : ""}!`);
@@ -62,34 +53,17 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    const fetchAndAnalyzeTransactions = async () => {
-      const username = await AsyncStorage.getItem("username");
-      if (!username) return;
+    if (loading || transactions.length === 0) return;
 
+    const analyzeTransactions = async () => {
       try {
-        const response = await axiosInstance.get(
-          `/users/username/${username}/with-transactions`
-        );
-        const transactions: Transaction[] =
-          response.data.bankConnections.flatMap((connection: any) =>
-            connection.accounts.flatMap((account: any) => account.transactions)
-          );
-
         const now = new Date();
         const sevenDaysAgo = new Date(now);
         sevenDaysAgo.setDate(now.getDate() - 7);
         const thirtyDaysAgo = new Date(now);
         thirtyDaysAgo.setDate(now.getDate() - 30);
-        const currentMonthStart = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          1
-        );
-        const lastMonthDate = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          1
-        );
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthYear = lastMonthDate.getFullYear();
         const lastMonthMonth = lastMonthDate.getMonth();
 
@@ -108,9 +82,7 @@ export default function Index() {
         for (let i = 0; i < 30; i++) {
           const date = new Date(now);
           date.setDate(now.getDate() - i);
-          date.getDay() === 0 || date.getDay() === 6
-            ? weekendDaysCount++
-            : weekdayDaysCount++;
+          date.getDay() === 0 || date.getDay() === 6 ? weekendDaysCount++ : weekdayDaysCount++;
         }
 
         transactions.forEach((tx) => {
@@ -137,8 +109,7 @@ export default function Index() {
             }
 
             if (txDate >= currentMonthStart && txDate <= now) {
-              chartExpenseByCategory[tx.category] =
-                (chartExpenseByCategory[tx.category] || 0) + absAmount;
+              chartExpenseByCategory[tx.category] = (chartExpenseByCategory[tx.category] || 0) + absAmount;
             }
           }
         });
@@ -152,12 +123,10 @@ export default function Index() {
           const dailyAverage = last7DaysExpense / 7;
           newSuggestions.push({
             period: "LAST 7 DAYS",
-            text: `You've spent ${formatNumber(
-              last7DaysExpense
-            )} ${currency} (avg ${formatNumber(dailyAverage)}/day). ${
-              dailyAverage > 50
-                ? "Consider setting daily spending limits."
-                : "Keep maintaining this spending pattern."
+            text: `You've spent ${formatNumber(last7DaysExpense)} ${currency} (avg ${formatNumber(
+              dailyAverage
+            )}/day). ${
+              dailyAverage > 50 ? "Consider setting daily spending limits." : "Keep maintaining this spending pattern."
             }`,
           });
         }
@@ -184,9 +153,7 @@ export default function Index() {
           }
         }
 
-        const topCategoryCurrentMonth = Object.entries(
-          currentMonthExpenseByCategory
-        ).sort(([, a], [, b]) => b - a)[0];
+        const topCategoryCurrentMonth = Object.entries(currentMonthExpenseByCategory).sort(([, a], [, b]) => b - a)[0];
 
         if (topCategoryCurrentMonth && currentMonthExpense > 0) {
           const [category, amount] = topCategoryCurrentMonth;
@@ -195,12 +162,8 @@ export default function Index() {
           if (percentage > 30) {
             newSuggestions.push({
               period: "THIS MONTH",
-              text: `${percentage}% of your spending (${formatNumber(
-                amount
-              )} ${currency}) is on ${category}. ${
-                ["Food", "Dining", "Restaurant", "Groceries"].some((c) =>
-                  category.includes(c)
-                )
+              text: `${percentage}% of your spending (${formatNumber(amount)} ${currency}) is on ${category}. ${
+                ["Food", "Dining", "Restaurant", "Groceries"].some((c) => category.includes(c))
                   ? "Consider meal planning to reduce food costs."
                   : "Check if you can optimize this category."
               }`,
@@ -209,28 +172,16 @@ export default function Index() {
         }
 
         const lastMonthCategories = Object.keys(lastMonthExpenseByCategory);
-        if (
-          lastMonthCategories.length > 0 &&
-          Object.keys(currentMonthExpenseByCategory).length > 0
-        ) {
+        if (lastMonthCategories.length > 0 && Object.keys(currentMonthExpenseByCategory).length > 0) {
           for (const category of lastMonthCategories) {
             const lastMonthAmount = lastMonthExpenseByCategory[category] || 0;
-            const currentMonthAmount =
-              currentMonthExpenseByCategory[category] || 0;
+            const currentMonthAmount = currentMonthExpenseByCategory[category] || 0;
 
             if (now.getDate() >= 10 && lastMonthAmount > 0) {
-              const daysInCurrentMonth = new Date(
-                now.getFullYear(),
-                now.getMonth() + 1,
-                0
-              ).getDate();
-              const projectedAmount =
-                (currentMonthAmount / now.getDate()) * daysInCurrentMonth;
+              const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+              const projectedAmount = (currentMonthAmount / now.getDate()) * daysInCurrentMonth;
 
-              if (
-                projectedAmount > lastMonthAmount * 1.3 &&
-                projectedAmount > 100
-              ) {
+              if (projectedAmount > lastMonthAmount * 1.3 && projectedAmount > 100) {
                 newSuggestions.push({
                   period: "MONTH-OVER-MONTH",
                   text: `Your ${category} spending is trending ${formatNumber(
@@ -260,13 +211,12 @@ export default function Index() {
 
         setChartData(chartArray);
       } catch (error: any) {
-        console.error("Failed to fetch transactions", error.message);
+        console.error("Failed to analyze transactions", error.message);
       }
-      setLoading(false);
     };
 
-    fetchAndAnalyzeTransactions();
-  }, []);
+    analyzeTransactions();
+  }, [transactions, loading]);
 
   return (
     <>
@@ -278,17 +228,11 @@ export default function Index() {
           <Text style={styles.greeting}>{greeting}</Text>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Expense Analyzer</Text>
-            <Text style={styles.subtitle}>
-              Track and optimize your spending wisely
-            </Text>
+            <Text style={styles.subtitle}>Track and optimize your spending wisely</Text>
           </View>
 
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={Colors.primary}
-              style={styles.loader}
-            />
+            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
           ) : (
             <>
               <Text style={styles.pageSection}>Spending Insights</Text>
@@ -302,8 +246,7 @@ export default function Index() {
                       height={220}
                       chartConfig={{
                         color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        labelColor: (opacity = 1) =>
-                          `rgba(51, 51, 51, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
                       }}
                       accessor="value"
                       backgroundColor="transparent"
@@ -315,16 +258,9 @@ export default function Index() {
                     <View style={styles.customLegend}>
                       {chartData.map((item, index) => (
                         <View key={index} style={styles.legendItem}>
-                          <View
-                            style={[
-                              styles.legendColor,
-                              { backgroundColor: item.color },
-                            ]}
-                          />
+                          <View style={[styles.legendColor, { backgroundColor: item.color }]} />
                           <Text style={styles.legendLabel}>
-                            <Text style={styles.legendCategory}>
-                              {item.name}
-                            </Text>
+                            <Text style={styles.legendCategory}>{item.name}</Text>
                             {`: ${item.amount} `}
                           </Text>
                         </View>
@@ -332,9 +268,7 @@ export default function Index() {
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.noData}>
-                    No expense data available for last month
-                  </Text>
+                  <Text style={styles.noData}>No expense data available for last month</Text>
                 )}
               </View>
 
@@ -344,17 +278,14 @@ export default function Index() {
                   suggestions.map((suggestion, index) => (
                     <View key={index} style={styles.suggestionBox}>
                       <Text style={styles.tipPeriod}>{suggestion.period}</Text>
-                      <Text style={styles.suggestionText}>
-                        {suggestion.text}
-                      </Text>
+                      <Text style={styles.suggestionText}>{suggestion.text}</Text>
                     </View>
                   ))
                 ) : (
                   <View style={styles.suggestionBox}>
                     <Text style={styles.tipPeriod}>ANALYSIS</Text>
                     <Text style={styles.suggestionText}>
-                      🎉 No specific recommendations available. Keep up the good
-                      work!
+                      🎉 No specific recommendations available. Keep up the good work!
                     </Text>
                   </View>
                 )}

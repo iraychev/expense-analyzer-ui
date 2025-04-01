@@ -12,11 +12,12 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
-import { fetchUser, deleteUser, updateBankConnections } from "@/api/user";
-import { linkBankConnection, deleteBankConnection } from "@/api/bankConnection";
+import { fetchUser, deleteUser, updateBankConnections } from "@/api/userService";
+import { linkBankConnection, deleteBankConnection } from "@/api/bankConnectionService";
 import { User } from "@/interface/User";
 import { BankConnection } from "@/interface/BankConnection";
 import Head from "expo-router/head";
+import { useTransactions } from "@/context/TransactionContext";
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,6 +25,7 @@ export default function Profile() {
   const [loading, setLoading] = useState<boolean>(true);
   const [pendingRequisitionId, setPendingRequisitionId] = useState<string | null>(null);
   const router = useRouter();
+  const { refreshTransactions } = useTransactions();
 
   useEffect(() => {
     let isMounted = true;
@@ -105,7 +107,8 @@ export default function Profile() {
     try {
       const updatedUser = await updateBankConnections(username);
       setUser(updatedUser);
-      Alert.alert("Success", "Bank connections updated successfully");
+      await refreshTransactions();
+      Alert.alert("Success", "Bank connections and transactions updated successfully");
     } catch (error: any) {
       Alert.alert("Update Failed", error.message);
     }
@@ -255,6 +258,7 @@ export default function Profile() {
                           setPendingRequisitionId(null);
                           const updatedUser = await updateBankConnections(username);
                           setUser(updatedUser);
+                          await refreshTransactions();
                         } catch (error: any) {
                           Alert.alert("Error", error.message);
                         }

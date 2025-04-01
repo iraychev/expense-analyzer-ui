@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/Colors";
-import { createRequisition } from "@/api/bankConnection";
+import { createRequisition } from "@/api/bankConnectionService";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import Head from "expo-router/head";

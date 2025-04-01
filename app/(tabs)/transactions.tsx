@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,22 +16,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
 import { Transaction } from "@/interface/Transaction";
-import { fetchTransactions } from "@/api/transaction";
 import Head from "expo-router/head";
+import { useTransactions } from "@/context/TransactionContext";
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<
-    "all" | "income" | "expense"
-  >("all");
+  const [selectedType, setSelectedType] = useState<"all" | "income" | "expense">("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("All");
-  const [loading, setLoading] = useState<boolean>(true);
 
   const [tempCategory, setTempCategory] = useState<string>(selectedCategory);
-  const [tempType, setTempType] = useState<"all" | "income" | "expense">(
-    selectedType
-  );
+  const [tempType, setTempType] = useState<"all" | "income" | "expense">(selectedType);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const currentYear = new Date().getFullYear();
@@ -55,28 +50,12 @@ export default function Transactions() {
     }, 100);
   }, []);
 
-  useEffect(() => {
-    const loadTransactions = async () => {
-      const username = await AsyncStorage.getItem("username");
-      if (!username) {
-        Alert.alert("Error", "Username not found in local storage");
-        return;
-      }
-      try {
-        const txs = await fetchTransactions(username);
-        setTransactions(txs);
-      } catch (error: any) {
-        Alert.alert("Failed to fetch transactions", error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTransactions();
-  }, []);
+  const onRefresh = useCallback(() => {
+    refreshTransactions();
+  }, [refreshTransactions]);
 
   const filteredTransactions = transactions.filter((transaction) => {
-    const categoryMatch =
-      selectedCategory === "" || transaction.category === selectedCategory;
+    const categoryMatch = selectedCategory === "" || transaction.category === selectedCategory;
     let typeMatch = true;
     if (selectedType === "income") {
       typeMatch = transaction.amount > 0;
@@ -91,9 +70,7 @@ export default function Transactions() {
       const transactionMonth = transactionDate.toLocaleString("default", {
         month: "long",
       });
-      monthMatch =
-        transactionDate.getFullYear() === parseInt(year) &&
-        transactionMonth === monthName;
+      monthMatch = transactionDate.getFullYear() === parseInt(year) && transactionMonth === monthName;
     }
     return categoryMatch && typeMatch && monthMatch;
   });
@@ -158,48 +135,27 @@ export default function Transactions() {
 
           <View style={styles.filtersRow}>
             <Text style={styles.pageSection}>Transaction History</Text>
-            <TouchableOpacity
-              onPress={openFilterModal}
-              style={styles.filterButton}
-            >
+            <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
               <FontAwesome name="filter" size={18} color="#fff" />
               <Text style={styles.filterButtonText}>Filter</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.monthPickerContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              ref={scrollViewRef}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
               {months.map((month) => (
                 <TouchableOpacity
                   key={month}
                   onPress={() => setSelectedMonth(month)}
-                  style={[
-                    styles.monthOption,
-                    selectedMonth === month && styles.selectedMonth,
-                  ]}
+                  style={[styles.monthOption, selectedMonth === month && styles.selectedMonth]}
                 >
-                  <Text
-                    style={[
-                      styles.monthText,
-                      selectedMonth === month && styles.selectedMonthText,
-                    ]}
-                  >
-                    {month}
-                  </Text>
+                  <Text style={[styles.monthText, selectedMonth === month && styles.selectedMonthText]}>{month}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
 
-          <Modal
-            visible={filterModalVisible}
-            animationType="slide"
-            transparent={true}
-          >
+          <Modal visible={filterModalVisible} animationType="slide" transparent={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Filter Transactions</Text>
@@ -224,34 +180,17 @@ export default function Transactions() {
                   {["all", "income", "expense"].map((type) => (
                     <TouchableOpacity
                       key={type}
-                      onPress={() =>
-                        setTempType(type as "all" | "income" | "expense")
-                      }
-                      style={[
-                        styles.toggleButton,
-                        tempType === type && styles.selectedToggle,
-                      ]}
+                      onPress={() => setTempType(type as "all" | "income" | "expense")}
+                      style={[styles.toggleButton, tempType === type && styles.selectedToggle]}
                     >
-                      <Text
-                        style={[
-                          styles.toggleText,
-                          tempType === type && styles.selectedToggleText,
-                        ]}
-                      >
-                        {type === "income"
-                          ? "Income"
-                          : type === "expense"
-                          ? "Expense"
-                          : "All"}
+                      <Text style={[styles.toggleText, tempType === type && styles.selectedToggleText]}>
+                        {type === "income" ? "Income" : type === "expense" ? "Expense" : "All"}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
                 <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    onPress={applyFilters}
-                    style={styles.modalButton}
-                  >
+                  <TouchableOpacity onPress={applyFilters} style={styles.modalButton}>
                     <Text style={styles.modalButtonText}>Apply Filters</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -266,11 +205,7 @@ export default function Transactions() {
           </Modal>
 
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={Colors.primary}
-              style={styles.loader}
-            />
+            <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
           ) : (
             <FlatList
               data={sortedTransactions}
@@ -278,35 +213,19 @@ export default function Transactions() {
               contentContainerStyle={styles.listContainer}
               ListEmptyComponent={() => (
                 <View style={styles.noTransactions}>
-                  <FontAwesome
-                    name="search"
-                    size={40}
-                    color={Colors.muted}
-                    style={styles.noDataIcon}
-                  />
-                  <Text style={styles.noTransactionsText}>
-                    No transactions found for the selected filters.
-                  </Text>
+                  <FontAwesome name="search" size={40} color={Colors.muted} style={styles.noDataIcon} />
+                  <Text style={styles.noTransactionsText}>No transactions found for the selected filters.</Text>
                 </View>
               )}
               renderItem={({ item }) => (
                 <View style={styles.transaction}>
                   <View style={styles.iconContainer}>
-                    <FontAwesome
-                      name={getCategoryIcon(item.category)}
-                      size={24}
-                      color={Colors.primary}
-                    />
+                    <FontAwesome name={getCategoryIcon(item.category)} size={24} color={Colors.primary} />
                   </View>
                   <View style={styles.transactionDetails}>
                     <View style={styles.transactionHeader}>
                       <Text style={styles.category}>{item.category}</Text>
-                      <Text
-                        style={[
-                          styles.amount,
-                          { color: item.amount < 0 ? "#FF3B30" : "#34C759" },
-                        ]}
-                      >
+                      <Text style={[styles.amount, { color: item.amount < 0 ? "#FF3B30" : "#34C759" }]}>
                         {item.amount < 0 ? "- " : "+ "}
                         {Math.abs(item.amount)} {item.currency}
                       </Text>
@@ -314,12 +233,12 @@ export default function Transactions() {
                     <Text style={styles.description} numberOfLines={2}>
                       {item.description}
                     </Text>
-                    <Text style={styles.valueDate}>
-                      {formatDate(item.valueDate)}
-                    </Text>
+                    <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
                   </View>
                 </View>
               )}
+              refreshing={loading}
+              onRefresh={onRefresh}
             />
           )}
         </View>
