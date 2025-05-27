@@ -1,5 +1,9 @@
 export const colors = {
   background: "#f0f0f0",
+  backgroundGradient: {
+    start: "#f0f0f0",
+    end: "#d0e1f9",
+  },
   white: "#ffffff",
   primary: "#1f2937",
   text: "#333333",

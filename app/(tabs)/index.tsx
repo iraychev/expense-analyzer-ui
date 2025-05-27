@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, SafeAreaView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {colors} from "@/constants/Colors";
+import { colors } from "@/constants/Colors";
 import { PieChart } from "react-native-chart-kit";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { colorPalette } from "@/constants/Colors";
+import { LinearGradient } from "expo-linear-gradient";
 
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -202,92 +203,110 @@ export default function Index() {
       <Head>
         <title>Analysis - Expense Analyzer</title>
       </Head>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.greeting}>{greeting}</Text>
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Expense Analyzer</Text>
-            <Text style={styles.subtitle}>Track and optimize your spending wisely</Text>
-          </View>
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={styles.gradientBackground}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView contentContainerStyle={styles.container}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Expense Analyzer</Text>
+              <Text style={styles.subtitle}>Track and optimize your spending wisely</Text>
+            </View>
 
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-          ) : (
-            <>
-              <Text style={styles.pageSection}>Spending Insights</Text>
-              <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>📊 This Month Breakdown</Text>
-                {chartData.length > 0 ? (
-                  <View style={styles.chartWrapper}>
-                    <PieChart
-                      data={chartData}
-                      width={screenWidth - 20}
-                      height={220}
-                      chartConfig={{
-                        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
-                      }}
-                      accessor="value"
-                      backgroundColor="transparent"
-                      paddingLeft="0"
-                      center={[screenWidth / 4, 0]}
-                      absolute
-                      hasLegend={false}
-                    />
-                    <View style={styles.customLegend}>
-                      {chartData.map((item, index) => (
-                        <View key={index} style={styles.legendItem}>
-                          <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                          <Text style={styles.legendLabel}>
-                            <Text style={styles.legendCategory}>{item.name}</Text>
-                            {`: ${item.amount} `}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noData}>No expense data available for last month</Text>
-                )}
-              </View>
+            <Text style={styles.greeting}>{greeting}</Text>
 
-              <Text style={styles.pageSection}>Smart Recommendations</Text>
-              <View style={styles.sectionContainer}>
-                {suggestions.length > 0 ? (
-                  suggestions.map((suggestion, index) => (
-                    <View key={index} style={styles.suggestionBox}>
-                      <Text style={styles.tipPeriod}>{suggestion.period}</Text>
-                      <Text style={styles.suggestionText}>{suggestion.text}</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+            ) : (
+              <>
+                <Text style={styles.pageSection}>Spending Insights</Text>
+                <View style={styles.sectionContainer}>
+                  <Text style={styles.sectionTitle}>📊 This Month Breakdown</Text>
+                  {chartData.length > 0 ? (
+                    <View style={styles.chartWrapper}>
+                      <PieChart
+                        data={chartData}
+                        width={screenWidth - 20}
+                        height={220}
+                        chartConfig={{
+                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                          labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
+                        }}
+                        accessor="value"
+                        backgroundColor="transparent"
+                        paddingLeft="0"
+                        center={[screenWidth / 4, 0]}
+                        absolute
+                        hasLegend={false}
+                      />
+                      <View style={styles.customLegend}>
+                        {chartData.map((item, index) => (
+                          <View key={index} style={styles.legendItem}>
+                            <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                            <Text style={styles.legendLabel}>
+                              <Text style={styles.legendCategory}>{item.name}</Text>
+                              {`: ${item.amount} ${transactions[0]?.currency || ""}`}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      <View style={styles.totalContainer}>
+                        <Text style={styles.totalAmount}>
+                          Total: {formatNumber(chartData.reduce((sum, item) => sum + item.value, 0))}{" "}
+                          {transactions[0]?.currency || ""}
+                        </Text>
+                      </View>
                     </View>
-                  ))
-                ) : (
-                  <View style={styles.suggestionBox}>
-                    <Text style={styles.tipPeriod}>ANALYSIS</Text>
-                    <Text style={styles.suggestionText}>
-                      🎉 No specific recommendations available. Keep up the good work!
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+                  ) : (
+                    <Text style={styles.noData}>No expense data available for last month</Text>
+                  )}
+                </View>
+
+                <Text style={styles.pageSection}>Smart Recommendations</Text>
+                <View style={styles.sectionContainer}>
+                  {suggestions.length > 0 ? (
+                    suggestions.map((suggestion, index) => (
+                      <View key={index} style={styles.suggestionBox}>
+                        <Text style={styles.tipPeriod}>{suggestion.period}</Text>
+                        <Text style={styles.suggestionText}>{suggestion.text}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.suggestionBox}>
+                      <Text style={styles.tipPeriod}>ANALYSIS</Text>
+                      <Text style={styles.suggestionText}>
+                        🎉 No specific recommendations available. Keep up the good work!
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </LinearGradient>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { flexGrow: 1, padding: 20, backgroundColor: colors.background },
+  gradientBackground: {
+    flex: 1,
+  },
+  safeArea: { flex: 1 },
+  container: { flexGrow: 1, padding: 20 },
   greeting: {
     fontSize: 24,
     fontWeight: "600",
-    color: colors.accent,
-    marginBottom: 10,
+    color: colors.primary,
+    marginBottom: 25,
     textAlign: "center",
   },
-  headerContainer: { alignItems: "center", marginBottom: 25 },
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 35,
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
@@ -300,21 +319,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: colors.accent,
-    marginTop: 10,
-    marginBottom: 15,
+    marginTop: 20,
+    marginBottom: 20,
     paddingLeft: 10,
   },
   sectionContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    padding: 15,
-    marginBottom: 25,
+    padding: 20,
+    marginBottom: 35,
     width: "100%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   sectionTitle: {
     fontSize: 18,
@@ -332,6 +351,23 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   chartWrapper: { alignItems: "center", width: "100%" },
+  totalContainer: {
+    marginTop: 25,
+    marginBottom: 10,
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    width: "80%",
+    backgroundColor: colors.primary + "08",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary + "30",
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.primary,
+  },
   customLegend: {
     flexDirection: "row",
     flexWrap: "wrap",

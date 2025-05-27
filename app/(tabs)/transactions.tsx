@@ -15,6 +15,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { colors } from "@/constants/Colors";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function Transactions() {
   const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
@@ -123,140 +124,144 @@ export default function Transactions() {
       <Head>
         <title>Your Transactions - Expense Analyzer</title>
       </Head>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Transactions</Text>
-            <Text style={styles.subtitle}>Track your financial activity</Text>
-          </View>
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={styles.gradientBackground}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.container}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Transactions</Text>
+              <Text style={styles.subtitle}>Track your financial activity</Text>
+            </View>
 
-          <View style={styles.filtersRow}>
-            <Text style={styles.pageSection}>Transaction History</Text>
-            <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
-              <FontAwesome name="filter" size={18} color="#fff" />
-              <Text style={styles.filterButtonText}>Filter</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.filtersRow}>
+              <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
+                <FontAwesome name="filter" size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
-          <View style={styles.monthPickerContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
-              {months.map((month) => (
-                <TouchableOpacity
-                  key={month}
-                  onPress={() => setSelectedMonth(month)}
-                  style={[styles.monthOption, selectedMonth === month && styles.selectedMonth]}
-                >
-                  <Text style={[styles.monthText, selectedMonth === month && styles.selectedMonthText]}>{month}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          <Modal visible={filterModalVisible} animationType="slide" transparent={true}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Filter Transactions</Text>
-                <Text style={styles.filterLabel}>Category</Text>
-                <RNPickerSelect
-                  onValueChange={(value: string) => setTempCategory(value)}
-                  items={[
-                    { label: "All Categories", value: "" },
-                    ...categories.map((category) => ({
-                      label: category,
-                      value: category,
-                    })),
-                  ]}
-                  style={pickerSelectStyles}
-                  value={tempCategory}
-                  useNativeAndroidPickerStyle={false}
-                  placeholder={{ label: "Select a category", value: null }}
-                />
-
-                <Text style={styles.filterLabel}>Transaction Type</Text>
-                <View style={styles.toggleContainer}>
-                  {["all", "income", "expense"].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      onPress={() => setTempType(type as "all" | "income" | "expense")}
-                      style={[styles.toggleButton, tempType === type && styles.selectedToggle]}
-                    >
-                      <Text style={[styles.toggleText, tempType === type && styles.selectedToggleText]}>
-                        {type === "income" ? "Income" : type === "expense" ? "Expense" : "All"}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity onPress={applyFilters} style={styles.modalButton}>
-                    <Text style={styles.modalButtonText}>Apply Filters</Text>
-                  </TouchableOpacity>
+            <View style={styles.monthPickerContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
+                {months.map((month) => (
                   <TouchableOpacity
-                    onPress={() => setFilterModalVisible(false)}
-                    style={[styles.modalButton, styles.cancelButton]}
+                    key={month}
+                    onPress={() => setSelectedMonth(month)}
+                    style={[styles.monthOption, selectedMonth === month && styles.selectedMonth]}
                   >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
+                    <Text style={[styles.monthText, selectedMonth === month && styles.selectedMonthText]}>{month}</Text>
                   </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <Modal visible={filterModalVisible} animationType="slide" transparent={true}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                  <Text style={styles.modalTitle}>Filter Transactions</Text>
+                  <Text style={styles.filterLabel}>Category</Text>
+                  <RNPickerSelect
+                    onValueChange={(value: string) => setTempCategory(value)}
+                    items={[
+                      { label: "All Categories", value: "" },
+                      ...categories.map((category) => ({
+                        label: category,
+                        value: category,
+                      })),
+                    ]}
+                    style={pickerSelectStyles}
+                    value={tempCategory}
+                    useNativeAndroidPickerStyle={false}
+                    placeholder={{ label: "Select a category", value: null }}
+                  />
+
+                  <Text style={styles.filterLabel}>Transaction Type</Text>
+                  <View style={styles.toggleContainer}>
+                    {["all", "income", "expense"].map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        onPress={() => setTempType(type as "all" | "income" | "expense")}
+                        style={[styles.toggleButton, tempType === type && styles.selectedToggle]}
+                      >
+                        <Text style={[styles.toggleText, tempType === type && styles.selectedToggleText]}>
+                          {type === "income" ? "Income" : type === "expense" ? "Expense" : "All"}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity onPress={applyFilters} style={styles.modalButton}>
+                      <Text style={styles.modalButtonText}>Apply Filters</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setFilterModalVisible(false)}
+                      style={[styles.modalButton, styles.cancelButton]}
+                    >
+                      <Text style={styles.modalButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Modal>
+            </Modal>
 
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-          ) : (
-            <FlatList
-              data={sortedTransactions}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.listContainer}
-              ListEmptyComponent={() => (
-                <View style={styles.noTransactions}>
-                  <FontAwesome name="search" size={40} color={colors.muted} style={styles.noDataIcon} />
-                  <Text style={styles.noTransactionsText}>No transactions found for the selected filters.</Text>
-                </View>
-              )}
-              renderItem={({ item }) => (
-                <View style={styles.transaction}>
-                  <View style={styles.iconContainer}>
-                    <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+            ) : (
+              <FlatList
+                data={sortedTransactions}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.listContainer}
+                ListEmptyComponent={() => (
+                  <View style={styles.noTransactions}>
+                    <FontAwesome name="search" size={40} color={colors.muted} style={styles.noDataIcon} />
+                    <Text style={styles.noTransactionsText}>No transactions found for the selected filters.</Text>
                   </View>
-                  <View style={styles.transactionDetails}>
-                    <View style={styles.transactionHeader}>
-                      <Text style={styles.category}>{item.category}</Text>
-                      <Text style={[styles.amount, { color: item.amount < 0 ? "#FF3B30" : "#34C759" }]}>
-                        {item.amount < 0 ? "- " : "+ "}
-                        {Math.abs(item.amount)} {item.currency}
-                      </Text>
+                )}
+                renderItem={({ item }) => (
+                  <View style={styles.transaction}>
+                    <View style={styles.iconContainer}>
+                      <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
                     </View>
-                    <Text style={styles.description} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                    <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
+                    <View style={styles.transactionDetails}>
+                      <View style={styles.transactionHeader}>
+                        <Text style={styles.category}>{item.category}</Text>
+                        <Text style={[styles.amount, { color: item.amount < 0 ? "#FF3B30" : "#34C759" }]}>
+                          {item.amount < 0 ? "- " : "+ "}
+                          {Math.abs(item.amount)} {item.currency}
+                        </Text>
+                      </View>
+                      <Text style={styles.description} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                      <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
+                    </View>
                   </View>
-                </View>
-              )}
-              refreshing={loading}
-              onRefresh={onRefresh}
-            />
-          )}
-        </View>
-      </SafeAreaView>
+                )}
+                refreshing={loading}
+                onRefresh={onRefresh}
+              />
+            )}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientBackground: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: colors.background,
   },
   headerContainer: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 35,
   },
   title: {
     fontSize: 28,
@@ -272,9 +277,22 @@ const styles = StyleSheet.create({
   },
   filtersRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 25,
+    marginTop: 10,
+  },
+  filterButton: {
+    backgroundColor: colors.primary,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   pageSection: {
     fontSize: 22,
@@ -282,31 +300,13 @@ const styles = StyleSheet.create({
     color: colors.accent,
     paddingLeft: 10,
   },
-  filterButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  filterButtonText: {
-    color: "#FFF",
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
   monthPickerContainer: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   monthOption: {
     paddingHorizontal: 18,
     paddingVertical: 12,
-    marginRight: 10,
+    marginRight: 12,
     backgroundColor: "#FFF",
     borderRadius: 12,
     borderWidth: 1,
@@ -413,13 +413,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   transaction: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    padding: 16,
+    marginBottom: 16,
+    padding: 18,
     borderRadius: 16,
     backgroundColor: colors.white,
     shadowColor: "#000",
@@ -429,13 +429,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: "#F5F7FA",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 18,
   },
   transactionDetails: {
     flex: 1,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   category: {
     fontSize: 16,
@@ -459,11 +459,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     opacity: 0.8,
-    marginBottom: 4,
+    marginBottom: 8,
+    lineHeight: 20,
   },
   valueDate: {
     fontSize: 13,
     color: colors.muted,
+    marginTop: 2,
   },
   noTransactions: {
     flex: 1,

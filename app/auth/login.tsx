@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import Colors from "@/constants/Colors";
+import { colors } from "@/constants/Colors";
 import { login } from "@/api/auth";
 import Head from "expo-router/head";
 
@@ -64,31 +64,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: Colors.primary,
+    color: colors.primary,
   },
   label: {
     fontSize: 18,
     marginBottom: 10,
-    color: Colors.text,
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
     marginBottom: 10,
     padding: 10,
     borderRadius: 5,
-    backgroundColor: Colors.white,
-    borderColor: Colors.muted,
+    backgroundColor: colors.white,
+    borderColor: colors.muted,
   },
   link: {
     marginTop: 20,
-    color: Colors.accent,
+    color: colors.accent,
     textAlign: "center",
     textDecorationLine: "underline",
   },
