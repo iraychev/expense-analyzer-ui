@@ -131,11 +131,10 @@ export default function Transactions() {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.container}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Transactions</Text>
-              <Text style={styles.subtitle}>Track your financial activity</Text>
-            </View>
-
-            <View style={styles.filtersRow}>
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>Transactions</Text>
+                <Text style={styles.subtitle}>Track your financial activity</Text>
+              </View>
               <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
                 <FontAwesome name="filter" size={18} color="#fff" />
               </TouchableOpacity>
@@ -260,27 +259,24 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 35,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: "flex-start",
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: colors.primary,
     marginBottom: 5,
-    textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
     color: colors.text,
-    textAlign: "center",
-  },
-  filtersRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginBottom: 25,
-    marginTop: 10,
   },
   filterButton: {
     backgroundColor: colors.primary,
