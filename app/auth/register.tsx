@@ -3,29 +3,58 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   Alert,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import Head from "expo-router/head";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants/Colors";
 import { register } from "@/api/auth";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
   const handleRegister = async () => {
+    // Validation
+    if (!name || !username || !password || !confirmPassword) {
+      Alert.alert("Validation Error", "Please fill in all required fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Validation Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Validation Error", "Password must be at least 6 characters long");
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await register(username, password, name);
-      Alert.alert("Registration Successful", `User ID: ${response.id}`);
+      Alert.alert("Registration Successful", "Your account has been created successfully!");
       router.push("/auth/login");
     } catch (error: any) {
       Alert.alert("Registration Failed", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,65 +63,303 @@ export default function Register() {
       <Head>
         <title>Register - Expense Analyzer</title>
       </Head>
-      <View style={styles.container}>
-        <Text style={styles.title}>Register</Text>
-        <Text style={styles.label}>Name:</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} />
-        <Text style={styles.label}>Username:</Text>
-        <TextInput
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-        <Text style={styles.label}>Password:</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        <Button title="Register" onPress={handleRegister} />
-        <TouchableOpacity onPress={() => router.push("/auth/login")}>
-          <Text style={styles.link}>Already have an account? Login here</Text>
-        </TouchableOpacity>
-      </View>
+      <LinearGradient
+        colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+        style={styles.gradientBackground}
+      >
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.headerContainer}>
+              <View style={styles.logoContainer}>
+                <Ionicons name="wallet" size={60} color={colors.white} />
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Start managing your finances today</Text>
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Full Name *"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="at-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  placeholder="Username *"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholder="Email (optional)"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  placeholder="Password *"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  placeholder="Confirm Password *"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons
+                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.passwordRequirements}>
+                <Text style={styles.requirementsTitle}>Password must:</Text>
+                <View style={styles.requirementItem}>
+                  <Ionicons
+                    name={password.length >= 6 ? "checkmark-circle" : "close-circle"}
+                    size={16}
+                    color={password.length >= 6 ? colors.success : colors.textMuted}
+                  />
+                  <Text style={[styles.requirementText, password.length >= 6 && styles.requirementMet]}>
+                    Be at least 6 characters long
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.registerButton, loading && styles.disabledButton]}
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.registerButtonText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.termsContainer}>
+                <Text style={styles.termsText}>
+                  By creating an account, you agree to our <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Text>
+              </View>
+
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <TouchableOpacity style={styles.loginLink} onPress={() => router.push("/auth/login")}>
+                <Text style={styles.loginText}>
+                  Already have an account? <Text style={styles.loginTextBold}>Sign In</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientBackground: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: colors.background,
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.white + "20",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    color: colors.primary,
-  },
-  label: {
-    fontSize: 18,
     marginBottom: 10,
-    color: colors.text,
+    textAlign: "center",
+    color: colors.white,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.white,
+    textAlign: "center",
+    opacity: 0.9,
+  },
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: 30,
+    padding: 30,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 16,
+    backgroundColor: colors.background,
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: colors.white,
-    borderColor: colors.muted,
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 16,
+    color: colors.text,
   },
-  link: {
-    marginTop: 20,
-    color: colors.accent,
+  passwordRequirements: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  requirementItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginLeft: 8,
+  },
+  requirementMet: {
+    color: colors.success,
+  },
+  registerButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  registerButtonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  termsContainer: {
+    marginBottom: 20,
+  },
+  termsText: {
+    fontSize: 13,
+    color: colors.textSecondary,
     textAlign: "center",
-    textDecorationLine: "underline",
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  loginLink: {
+    alignItems: "center",
+  },
+  loginText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+  },
+  loginTextBold: {
+    color: colors.primary,
+    fontWeight: "bold",
   },
 });

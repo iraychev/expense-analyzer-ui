@@ -9,19 +9,23 @@ import {
   Modal,
   SafeAreaView,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants/Colors";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
+
+const ITEM_HEIGHT = 100;
 
 export default function Transactions() {
   const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedType, setSelectedType] = useState<"all" | "income" | "expense">("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [tempCategory, setTempCategory] = useState<string>(selectedCategory);
   const [tempType, setTempType] = useState<"all" | "income" | "expense">(selectedType);
@@ -70,7 +74,17 @@ export default function Transactions() {
       });
       monthMatch = transactionDate.getFullYear() === parseInt(year) && transactionMonth === monthName;
     }
-    return categoryMatch && typeMatch && monthMatch;
+
+    let searchMatch = true;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      searchMatch =
+        transaction.description.toLowerCase().includes(query) ||
+        transaction.category.toLowerCase().includes(query) ||
+        Math.abs(transaction.amount).toString().includes(query);
+    }
+
+    return categoryMatch && typeMatch && monthMatch && searchMatch;
   });
 
   const sortedTransactions = [...filteredTransactions].sort(
@@ -119,6 +133,33 @@ export default function Transactions() {
     setFilterModalVisible(false);
   };
 
+  const renderTransaction = ({ item }: { item: any }) => (
+    <View style={styles.transaction}>
+      <View style={[styles.iconContainer, { backgroundColor: colors.primary + "10" }]}>
+        <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
+      </View>
+      <View style={styles.transactionDetails}>
+        <View style={styles.transactionHeader}>
+          <Text style={styles.category}>{item.category}</Text>
+          <Text style={[styles.amount, { color: item.amount < 0 ? colors.expense : colors.income }]}>
+            {item.amount < 0 ? "- " : "+ "}
+            {Math.abs(item.amount)} {item.currency}
+          </Text>
+        </View>
+        <Text style={styles.description} numberOfLines={2}>
+          {item.description}
+        </Text>
+        <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
+      </View>
+    </View>
+  );
+
+  const getItemLayout = (data: any, index: number) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  });
+
   return (
     <>
       <Head>
@@ -136,8 +177,25 @@ export default function Transactions() {
                 <Text style={styles.subtitle}>Track your financial activity</Text>
               </View>
               <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
-                <FontAwesome name="filter" size={18} color="#fff" />
+                <FontAwesome name="filter" size={18} color={colors.white} />
               </TouchableOpacity>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search transactions..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <View style={styles.monthPickerContainer}>
@@ -196,7 +254,7 @@ export default function Transactions() {
                       onPress={() => setFilterModalVisible(false)}
                       style={[styles.modalButton, styles.cancelButton]}
                     >
-                      <Text style={styles.modalButtonText}>Cancel</Text>
+                      <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -204,40 +262,33 @@ export default function Transactions() {
             </Modal>
 
             {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+              <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <FlatList
                 data={sortedTransactions}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContainer}
-                ListEmptyComponent={() => (
-                  <View style={styles.noTransactions}>
-                    <FontAwesome name="search" size={40} color={colors.muted} style={styles.noDataIcon} />
-                    <Text style={styles.noTransactionsText}>No transactions found for the selected filters.</Text>
-                  </View>
-                )}
-                renderItem={({ item }) => (
-                  <View style={styles.transaction}>
-                    <View style={styles.iconContainer}>
-                      <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
-                    </View>
-                    <View style={styles.transactionDetails}>
-                      <View style={styles.transactionHeader}>
-                        <Text style={styles.category}>{item.category}</Text>
-                        <Text style={[styles.amount, { color: item.amount < 0 ? "#FF3B30" : "#34C759" }]}>
-                          {item.amount < 0 ? "- " : "+ "}
-                          {Math.abs(item.amount)} {item.currency}
-                        </Text>
-                      </View>
-                      <Text style={styles.description} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                      <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
-                    </View>
-                  </View>
-                )}
+                renderItem={renderTransaction}
                 refreshing={loading}
                 onRefresh={onRefresh}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                initialNumToRender={10}
+                windowSize={10}
+                getItemLayout={getItemLayout}
+                ListEmptyComponent={() => (
+                  <View style={styles.noTransactions}>
+                    <View style={styles.emptyIconContainer}>
+                      <FontAwesome name="search" size={50} color={colors.textMuted} />
+                    </View>
+                    <Text style={styles.noTransactionsTitle}>No transactions found</Text>
+                    <Text style={styles.noTransactionsText}>
+                      {searchQuery
+                        ? "Try adjusting your search or filters"
+                        : "Connect a bank account to start tracking"}
+                    </Text>
+                  </View>
+                )}
               />
             )}
           </View>
@@ -262,56 +313,68 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 35,
+    marginBottom: 20,
   },
   titleContainer: {
     flex: 1,
     alignItems: "flex-start",
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    color: colors.primary,
+    color: colors.white,
     marginBottom: 5,
   },
   subtitle: {
     fontSize: 18,
-    color: colors.text,
+    color: colors.white,
+    opacity: 0.9,
   },
   filterButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white + "20",
     padding: 12,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: colors.white + "30",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 20,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
-  pageSection: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: colors.accent,
-    paddingLeft: 10,
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
+    color: colors.text,
   },
   monthPickerContainer: {
-    marginBottom: 30,
+    marginBottom: 20,
   },
   monthOption: {
     paddingHorizontal: 18,
     paddingVertical: 12,
     marginRight: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   monthText: {
     fontSize: 14,
@@ -322,7 +385,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   selectedMonthText: {
-    color: "#FFF",
+    color: colors.white,
     fontWeight: "600",
   },
   modalOverlay: {
@@ -333,13 +396,13 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: "90%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     borderRadius: 20,
     padding: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 8,
   },
   modalTitle: {
@@ -353,7 +416,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
-    color: colors.accent,
+    color: colors.primary,
   },
   toggleContainer: {
     flexDirection: "row",
@@ -365,10 +428,10 @@ const styles = StyleSheet.create({
     padding: 12,
     marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
     borderRadius: 12,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
   },
   selectedToggle: {
     backgroundColor: colors.primary,
@@ -380,7 +443,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   selectedToggleText: {
-    color: "#FFF",
+    color: colors.white,
   },
   modalButtons: {
     flexDirection: "row",
@@ -394,19 +457,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cancelButton: {
-    backgroundColor: "#E0E0E0",
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalButtonText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "bold",
     fontSize: 16,
+  },
+  cancelButtonText: {
+    color: colors.text,
   },
   listContainer: {
     paddingBottom: 30,
@@ -417,18 +485,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 18,
     borderRadius: 16,
-    backgroundColor: colors.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: colors.card,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+    height: ITEM_HEIGHT,
   },
   iconContainer: {
     width: 54,
     height: 54,
-    borderRadius: 27,
-    backgroundColor: "#F5F7FA",
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 18,
@@ -453,31 +523,42 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: colors.text,
-    opacity: 0.8,
+    color: colors.textSecondary,
     marginBottom: 8,
     lineHeight: 20,
   },
   valueDate: {
     fontSize: 13,
-    color: colors.muted,
+    color: colors.textMuted,
     marginTop: 2,
   },
   noTransactions: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 50,
+    marginTop: 100,
     padding: 20,
   },
-  noDataIcon: {
-    marginBottom: 15,
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  noTransactionsTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 10,
   },
   noTransactionsText: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textSecondary,
     textAlign: "center",
-    fontStyle: "italic",
+    lineHeight: 22,
   },
   loader: {
     marginTop: 40,
@@ -491,11 +572,11 @@ const pickerSelectStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
     borderRadius: 12,
     color: colors.text,
     paddingRight: 30,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     marginBottom: 20,
   },
   inputAndroid: {
@@ -504,11 +585,11 @@ const pickerSelectStyles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
     borderRadius: 12,
     color: colors.text,
     paddingRight: 30,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     marginBottom: 20,
   },
 });

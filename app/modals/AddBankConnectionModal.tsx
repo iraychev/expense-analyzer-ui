@@ -1,25 +1,17 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
 import { createRequisition } from "@/api/bankConnectionService";
 import * as Linking from "expo-linking";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 const institutions = [
-  { id: "DSKBANK_STSABGSFXXX", name: "DSK" },
-  { id: "UNICREDIT_UNCRBGSF", name: "Unicredit Bulbank" },
-  { id: "REVOLUT_REVOLT21", name: "Revolut" },
-  { id: "FIBANK_FINVBGSF", name: "Fibank" },
+  { id: "DSKBANK_STSABGSFXXX", name: "DSK", icon: "business" },
+  { id: "UNICREDIT_UNCRBGSF", name: "Unicredit Bulbank", icon: "business" },
+  { id: "REVOLUT_REVOLT21", name: "Revolut", icon: "card" },
+  { id: "FIBANK_FINVBGSF", name: "Fibank", icon: "business" },
 ];
 
 interface AddBankConnectionModalProps {
@@ -69,69 +61,80 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={resetAndClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={resetAndClose}>
       <View style={styles.modalOverlay}>
-        <LinearGradient
-          colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
-          style={styles.gradientBackground}
-        >
-          <View style={styles.container}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>Add Bank Connection</Text>
-              <Text style={styles.subtitle}>Connect your financial institution</Text>
-            </View>
+        <View style={styles.modalContent}>
+          <LinearGradient
+            colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
+            style={styles.gradientHeader}
+          >
+            <TouchableOpacity style={styles.closeButton} onPress={resetAndClose}>
+              <Ionicons name="close" size={24} color={colors.white} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Add Bank Connection</Text>
+            <Text style={styles.subtitle}>Connect your financial institution</Text>
+          </LinearGradient>
 
-            <View style={styles.formContainer}>
-              <Text style={styles.label}>Connection Name</Text>
+          <View style={styles.formContainer}>
+            <Text style={styles.label}>Connection Name</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="bookmark-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter connection name"
+                placeholder="e.g., My Main Account"
                 value={reference}
                 onChangeText={setReference}
-                placeholderTextColor={colors.text + "80"}
+                placeholderTextColor={colors.textMuted}
               />
+            </View>
 
-              <Text style={styles.label}>Select Institution</Text>
-              <View style={styles.institutionGrid}>
-                {institutions.map((inst) => (
-                  <TouchableOpacity
-                    key={inst.id}
-                    style={[styles.institutionItem, inst.id === selectedInstitution.id && styles.selectedInstitution]}
-                    onPress={() => setSelectedInstitution(inst)}
+            <Text style={styles.label}>Select Institution</Text>
+            <View style={styles.institutionGrid}>
+              {institutions.map((inst) => (
+                <TouchableOpacity
+                  key={inst.id}
+                  style={[styles.institutionItem, inst.id === selectedInstitution.id && styles.selectedInstitution]}
+                  onPress={() => setSelectedInstitution(inst)}
+                >
+                  <Ionicons
+                    name={inst.icon as any}
+                    size={24}
+                    color={inst.id === selectedInstitution.id ? colors.white : colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.institutionText,
+                      inst.id === selectedInstitution.id && styles.selectedInstitutionText,
+                    ]}
                   >
-                    <Text
-                      style={[
-                        styles.institutionText,
-                        inst.id === selectedInstitution.id && styles.selectedInstitutionText,
-                      ]}
-                    >
-                      {inst.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.buttonsContainer}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleCreateRequisition} disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Text style={styles.actionButtonText}>Create Requisition</Text>
-                  )}
+                    {inst.name}
+                  </Text>
                 </TouchableOpacity>
+              ))}
+            </View>
 
-                <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={resetAndClose}>
-                  <Text style={[styles.actionButtonText, styles.cancelButtonText]}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, loading && styles.disabledButton]}
+                onPress={handleCreateRequisition}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <>
+                    <Ionicons name="link-outline" size={20} color={colors.white} />
+                    <Text style={styles.actionButtonText}>Create Connection</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={resetAndClose}>
+                <Text style={[styles.actionButtonText, styles.cancelButtonText]}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </View>
     </Modal>
   );
@@ -140,96 +143,105 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
   },
-  gradientBackground: {
-    flex: 1,
-    marginTop: 50,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    overflow: "hidden",
+    maxHeight: "80%",
   },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  headerContainer: {
+  gradientHeader: {
+    padding: 30,
+    paddingTop: 40,
     alignItems: "center",
-    marginBottom: 25,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    padding: 10,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: colors.primary,
+    color: colors.white,
     marginBottom: 5,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 18,
-    color: colors.text,
+    fontSize: 16,
+    color: colors.white,
     textAlign: "center",
+    opacity: 0.9,
   },
   formContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    padding: 25,
+    paddingTop: 30,
   },
-  label: { 
-    fontSize: 16, 
+  label: {
+    fontSize: 16,
     marginBottom: 10,
-    marginTop: 15,
-    color: colors.accent,
+    color: colors.primary,
     fontWeight: "600",
     paddingLeft: 5,
   },
-  input: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
     borderRadius: 12,
-    padding: 15,
-    backgroundColor: colors.white,
+    paddingHorizontal: 15,
+    backgroundColor: colors.background,
+    marginBottom: 25,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 15,
     fontSize: 16,
+    color: colors.text,
   },
   institutionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 25,
+    marginBottom: 30,
     marginTop: 10,
   },
   institutionItem: {
     width: "48%",
-    padding: 15,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 12,
-    marginBottom: 10,
+    padding: 20,
+    backgroundColor: colors.background,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 16,
+    marginBottom: 15,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 2,
   },
   selectedInstitution: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  institutionText: { 
+  institutionText: {
     color: colors.text,
-    fontWeight: "500",
-    fontSize: 15,
+    fontWeight: "600",
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
   },
-  selectedInstitutionText: { 
-    fontWeight: "bold", 
-    color: colors.white 
+  selectedInstitutionText: {
+    color: colors.white,
   },
   buttonsContainer: {
     marginTop: 10,
@@ -237,24 +249,30 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
-    padding: 16,
+    padding: 18,
     alignItems: "center",
     marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   actionButtonText: {
-    color: "#FFFFFF",
+    color: colors.white,
     fontWeight: "bold",
     fontSize: 16,
+    marginLeft: 8,
   },
   cancelButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
   },
   cancelButtonText: {
     color: colors.text,

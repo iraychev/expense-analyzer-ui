@@ -20,6 +20,7 @@ import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
 import AddBankConnectionModal from "@/app/modals/AddBankConnectionModal";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function BankConnections() {
   const [user, setUser] = useState<User | null>(null);
@@ -114,7 +115,6 @@ export default function BankConnections() {
     );
   };
 
-  // New handler for modal success
   const handleModalSuccess = async (requisitionId: string) => {
     setPendingRequisitionId(requisitionId);
     setShowAddModal(false);
@@ -137,7 +137,7 @@ export default function BankConnections() {
             </View>
 
             {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+              <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <>
                 <Text style={styles.pageSection}>Your Connections</Text>
@@ -149,10 +149,15 @@ export default function BankConnections() {
                           onPress={() => toggleExpand(connection.id)}
                           style={styles.bankConnectionHeader}
                         >
-                          <Text style={styles.bankReference}>{connection.reference}</Text>
-                          <Text style={styles.collapseIndicator}>
-                            {expandedConnections.includes(connection.id) ? "-" : "+"}
-                          </Text>
+                          <View style={styles.bankInfo}>
+                            <Ionicons name="business" size={20} color={colors.primary} style={styles.bankIcon} />
+                            <Text style={styles.bankReference}>{connection.reference}</Text>
+                          </View>
+                          <Ionicons
+                            name={expandedConnections.includes(connection.id) ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color={colors.primary}
+                          />
                         </TouchableOpacity>
                         {expandedConnections.includes(connection.id) && (
                           <>
@@ -169,10 +174,14 @@ export default function BankConnections() {
                             <View style={styles.accountDetails}>
                               {connection.accounts.map((account, idx) => (
                                 <View key={idx} style={styles.accountItem}>
-                                  <Text style={styles.accountLabel}>Account id:</Text>
-                                  <Text style={styles.accountValue}>{account.id || "N/A"}</Text>
-                                  <Text style={styles.accountLabel}>IBAN:</Text>
-                                  <Text style={styles.accountValue}>{account.iban || "N/A"}</Text>
+                                  <View style={styles.accountRow}>
+                                    <Text style={styles.accountLabel}>Account ID:</Text>
+                                    <Text style={styles.accountValue}>{account.id || "N/A"}</Text>
+                                  </View>
+                                  <View style={styles.accountRow}>
+                                    <Text style={styles.accountLabel}>IBAN:</Text>
+                                    <Text style={styles.accountValue}>{account.iban || "N/A"}</Text>
+                                  </View>
                                 </View>
                               ))}
                             </View>
@@ -180,29 +189,39 @@ export default function BankConnections() {
                               style={styles.deleteButton}
                               onPress={() => handleDeleteConnection(connection.requisitionId)}
                             >
-                              <Text style={styles.actionButtonText}>Delete</Text>
+                              <Ionicons name="trash-outline" size={18} color={colors.white} />
+                              <Text style={styles.deleteButtonText}>Delete Connection</Text>
                             </TouchableOpacity>
                           </>
                         )}
                       </View>
                     ))
                   ) : (
-                    <Text style={styles.noData}>
-                      No bank connections available. Add a connection to track your finances.
-                    </Text>
+                    <View style={styles.emptyState}>
+                      <View style={styles.emptyIconContainer}>
+                        <Ionicons name="link-outline" size={50} color={colors.textMuted} />
+                      </View>
+                      <Text style={styles.noDataTitle}>No bank connections yet</Text>
+                      <Text style={styles.noData}>Add a connection to start tracking your finances automatically</Text>
+                    </View>
                   )}
+
                   {user && user.bankConnections.length > 0 && (
-                    <TouchableOpacity style={styles.updateButton} onPress={handleUpdateBankConnections}>
+                    <TouchableOpacity style={styles.syncButton} onPress={handleUpdateBankConnections}>
+                      <Ionicons name="sync-outline" size={20} color={colors.white} />
                       <Text style={styles.actionButtonText}>Sync Bank Connections</Text>
                     </TouchableOpacity>
                   )}
+
                   <View style={{ marginTop: 15 }}>
                     <TouchableOpacity style={styles.actionButton} onPress={() => setShowAddModal(true)}>
+                      <Ionicons name="add-circle-outline" size={20} color={colors.white} />
                       <Text style={styles.actionButtonText}>Add Bank Connection</Text>
                     </TouchableOpacity>
+
                     {pendingRequisitionId && (
                       <TouchableOpacity
-                        style={[styles.actionButton, { marginTop: 10 }]}
+                        style={[styles.actionButton, styles.finalizeButton]}
                         onPress={async () => {
                           const username = await AsyncStorage.getItem("username");
                           if (!username) {
@@ -222,6 +241,7 @@ export default function BankConnections() {
                           }
                         }}
                       >
+                        <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
                         <Text style={styles.actionButtonText}>Finalize Linking</Text>
                       </TouchableOpacity>
                     )}
@@ -233,7 +253,6 @@ export default function BankConnections() {
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Add the modal component */}
       <AddBankConnectionModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -259,75 +278,84 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    color: colors.primary,
+    color: colors.white,
     marginBottom: 5,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
-    color: colors.text,
+    color: colors.white,
     textAlign: "center",
+    opacity: 0.9,
   },
   pageSection: {
     fontSize: 22,
     fontWeight: "bold",
-    color: colors.accent,
+    color: colors.white,
     marginTop: 10,
     marginBottom: 15,
     paddingLeft: 10,
   },
   sectionContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 20,
-    padding: 15,
+    padding: 20,
     marginBottom: 25,
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
   bankConnection: {
-    backgroundColor: "#F9F9F9",
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 16,
     marginVertical: 10,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   bankConnectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  bankReference: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.primary,
-    marginBottom: 10,
+  bankInfo: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  collapseIndicator: {
+  bankIcon: {
+    marginRight: 10,
+  },
+  bankReference: {
     fontSize: 18,
     fontWeight: "bold",
     color: colors.primary,
   },
   bankDetails: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 15,
+    marginTop: 15,
   },
   bankDetailItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   bankDetailLabel: {
     fontSize: 14,
-    color: colors.text,
-    opacity: 0.8,
+    color: colors.textSecondary,
   },
   bankDetailValue: {
     fontSize: 14,
@@ -335,12 +363,17 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   accountDetails: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: "#eef",
-    borderRadius: 10,
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: colors.primary + "08",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + "20",
   },
   accountItem: {
+    marginBottom: 10,
+  },
+  accountRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 5,
@@ -348,10 +381,12 @@ const styles = StyleSheet.create({
   accountLabel: {
     fontSize: 14,
     fontWeight: "600",
+    color: colors.textSecondary,
   },
   accountValue: {
     fontSize: 14,
     color: colors.primary,
+    fontWeight: "500",
   },
   actionButton: {
     backgroundColor: colors.primary,
@@ -359,34 +394,84 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     marginVertical: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   actionButtonText: {
-    color: "#FFFFFF",
+    color: colors.white,
     fontWeight: "bold",
     fontSize: 16,
+    marginLeft: 8,
   },
-  updateButton: {
+  syncButton: {
     backgroundColor: colors.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   deleteButton: {
-    backgroundColor: "orangered",
+    backgroundColor: colors.danger,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: colors.danger,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  deleteButtonText: {
+    color: colors.white,
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  finalizeButton: {
+    backgroundColor: colors.success,
   },
   loader: {
     marginTop: 40,
   },
+  emptyState: {
+    alignItems: "center",
+    marginVertical: 60,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  noDataTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 10,
+  },
   noData: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textSecondary,
     textAlign: "center",
-    marginVertical: 30,
-    fontStyle: "italic",
+    marginHorizontal: 20,
+    lineHeight: 22,
   },
 });

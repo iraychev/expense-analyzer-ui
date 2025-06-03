@@ -1,25 +1,90 @@
 export const colors = {
-  background: "#f0f0f0",
+  // Primary colors
+  background: "#FAFBFC",
   backgroundGradient: {
-    start: "#f0f0f0",
-    end: "#d0e1f9",
+    start: "#667eea",
+    end: "#764ba2",
   },
-  white: "#ffffff",
-  primary: "#1f2937",
-  text: "#333333",
-  accent: "#60a5fa",
-  muted: "#6c757d",
+  // Subtle gradient option
+  subtleGradient: {
+    start: "#F7F9FB",
+    end: "#E9EFFA",
+  },
+
+  // Base colors
+  white: "#FFFFFF",
+  card: "#FFFFFF",
+
+  // Brand colors
+  primary: "#5B21B6", // Rich purple
+  primaryLight: "#7C3AED", // Lighter purple
+  primaryDark: "#4C1D95", // Darker purple
+
+  // Semantic colors
+  accent: "#10B981", // Green for positive actions
+  danger: "#EF4444", // Red for negative/delete
+  warning: "#F59E0B", // Orange for warnings
+  success: "#10B981", // Green
+  info: "#3B82F6", // Blue
+
+  // Text colors
+  text: "#1F2937", // Primary text
+  textSecondary: "#6B7280", // Secondary text
+  textMuted: "#9CA3AF", // Muted text
+  textLight: "#FFFFFF", // Light text for dark backgrounds
+
+  // Border and divider
+  border: "#E5E7EB",
+  divider: "#F3F4F6",
+
+  // Shadow
+  shadow: "#000000",
+
+  // Chart colors
+  chartPrimary: "#667eea",
+  chartSecondary: "#764ba2",
+
+  // Income/Expense specific
+  income: "#10B981",
+  expense: "#EF4444",
 };
 
 export const colorPalette = [
-  "#FF6384",
-  "#36A2EB",
-  "#FFCE56",
-  "#4BC0C0",
-  "#9966FF",
-  "#FF9F40",
-  "#41B883",
-  "#E74C3C",
-  "#3498DB",
-  "#F1C40F",
+  "#667eea", // Purple
+  "#764ba2", // Pink Purple
+  "#10B981", // Green
+  "#F59E0B", // Orange
+  "#3B82F6", // Blue
+  "#EF4444", // Red
+  "#8B5CF6", // Violet
+  "#EC4899", // Pink
+  "#14B8A6", // Teal
+  "#F97316", // Dark Orange
 ];
+
+// Dark theme colors (for future implementation)
+export const darkColors = {
+  background: "#0F172A",
+  backgroundGradient: {
+    start: "#1E293B",
+    end: "#0F172A",
+  },
+  card: "#1E293B",
+  primary: "#8B5CF6",
+  primaryLight: "#A78BFA",
+  primaryDark: "#6D28D9",
+  accent: "#34D399",
+  danger: "#F87171",
+  warning: "#FBBF24",
+  success: "#34D399",
+  info: "#60A5FA",
+  text: "#F3F4F6",
+  textSecondary: "#D1D5DB",
+  textMuted: "#9CA3AF",
+  textLight: "#FFFFFF",
+  border: "#374151",
+  divider: "#1F2937",
+  shadow: "#000000",
+  income: "#34D399",
+  expense: "#F87171",
+};
