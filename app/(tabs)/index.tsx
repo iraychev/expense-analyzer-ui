@@ -225,7 +225,7 @@ export default function Index() {
                 {/* Balance Card */}
                 <View style={styles.balanceCard}>
                   <LinearGradient
-                    colors={[colors.primary, colors.primaryLight]}
+                    colors={[colors.info, colors.primaryDark]}
                     style={styles.balanceGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}

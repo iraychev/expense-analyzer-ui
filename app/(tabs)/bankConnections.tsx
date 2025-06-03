@@ -136,67 +136,86 @@ export default function BankConnections() {
               <Text style={styles.subtitle}>Manage your financial connections</Text>
             </View>
 
+            {/* Primary Action Button - Always visible */}
+            <View style={styles.primaryActionContainer}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setShowAddModal(true)}>
+                <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+                <Text style={styles.actionButtonText}>Add Bank Connection</Text>
+              </TouchableOpacity>
+            </View>
+
             {loading ? (
               <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <>
-                <Text style={styles.pageSection}>Your Connections</Text>
-                <View style={styles.sectionContainer}>
-                  {user && user.bankConnections.length > 0 ? (
-                    user.bankConnections.map((connection: BankConnection) => (
-                      <View key={connection.id} style={styles.bankConnection}>
-                        <TouchableOpacity
-                          onPress={() => toggleExpand(connection.id)}
-                          style={styles.bankConnectionHeader}
-                        >
-                          <View style={styles.bankInfo}>
-                            <Ionicons name="business" size={20} color={colors.primary} style={styles.bankIcon} />
-                            <Text style={styles.bankReference}>{connection.reference}</Text>
-                          </View>
-                          <Ionicons
-                            name={expandedConnections.includes(connection.id) ? "chevron-up" : "chevron-down"}
-                            size={20}
-                            color={colors.primary}
-                          />
-                        </TouchableOpacity>
-                        {expandedConnections.includes(connection.id) && (
-                          <>
-                            <View style={styles.bankDetails}>
-                              <View style={styles.bankDetailItem}>
-                                <Text style={styles.bankDetailLabel}>Institution</Text>
-                                <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
-                              </View>
-                              <View style={styles.bankDetailItem}>
-                                <Text style={styles.bankDetailLabel}>Requisition ID</Text>
-                                <Text style={styles.bankDetailValue}>{connection.requisitionId}</Text>
-                              </View>
+                {user && user.bankConnections.length > 0 ? (
+                  <>
+                    <Text style={styles.pageSection}>Your Connections</Text>
+                    <View style={styles.sectionContainer}>
+                      {user.bankConnections.map((connection: BankConnection) => (
+                        <View key={connection.id} style={styles.bankConnection}>
+                          {/* Bank connection content remains the same */}
+                          <TouchableOpacity
+                            onPress={() => toggleExpand(connection.id)}
+                            style={styles.bankConnectionHeader}
+                          >
+                            <View style={styles.bankInfo}>
+                              <Ionicons name="business" size={20} color={colors.primary} style={styles.bankIcon} />
+                              <Text style={styles.bankReference}>{connection.reference}</Text>
                             </View>
-                            <View style={styles.accountDetails}>
-                              {connection.accounts.map((account, idx) => (
-                                <View key={idx} style={styles.accountItem}>
-                                  <View style={styles.accountRow}>
-                                    <Text style={styles.accountLabel}>Account ID:</Text>
-                                    <Text style={styles.accountValue}>{account.id || "N/A"}</Text>
-                                  </View>
-                                  <View style={styles.accountRow}>
-                                    <Text style={styles.accountLabel}>IBAN:</Text>
-                                    <Text style={styles.accountValue}>{account.iban || "N/A"}</Text>
-                                  </View>
+                            <Ionicons
+                              name={expandedConnections.includes(connection.id) ? "chevron-up" : "chevron-down"}
+                              size={20}
+                              color={colors.primary}
+                            />
+                          </TouchableOpacity>
+                          {expandedConnections.includes(connection.id) && (
+                            <>
+                              <View style={styles.bankDetails}>
+                                <View style={styles.bankDetailItem}>
+                                  <Text style={styles.bankDetailLabel}>Institution</Text>
+                                  <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
                                 </View>
-                              ))}
-                            </View>
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => handleDeleteConnection(connection.requisitionId)}
-                            >
-                              <Ionicons name="trash-outline" size={18} color={colors.white} />
-                              <Text style={styles.deleteButtonText}>Delete Connection</Text>
-                            </TouchableOpacity>
-                          </>
-                        )}
-                      </View>
-                    ))
-                  ) : (
+                                <View style={styles.bankDetailItem}>
+                                  <Text style={styles.bankDetailLabel}>Requisition ID</Text>
+                                  <Text style={styles.bankDetailValue}>{connection.requisitionId}</Text>
+                                </View>
+                              </View>
+                              <View style={styles.accountDetails}>
+                                {connection.accounts.map((account, idx) => (
+                                  <View key={idx} style={styles.accountItem}>
+                                    <View style={styles.accountRow}>
+                                      <Text style={styles.accountLabel}>Account ID:</Text>
+                                      <Text style={styles.accountValue}>{account.id || "N/A"}</Text>
+                                    </View>
+                                    <View style={styles.accountRow}>
+                                      <Text style={styles.accountLabel}>IBAN:</Text>
+                                      <Text style={styles.accountValue}>{account.iban || "N/A"}</Text>
+                                    </View>
+                                  </View>
+                                ))}
+                              </View>
+                              <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={() => handleDeleteConnection(connection.requisitionId)}
+                              >
+                                <Ionicons name="trash-outline" size={18} color={colors.white} />
+                                <Text style={styles.deleteButtonText}>Delete Connection</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
+                        </View>
+                      ))}
+
+                      {/* Sync Button - Only shown when connections exist */}
+                      <TouchableOpacity style={styles.syncButton} onPress={handleUpdateBankConnections}>
+                        <Ionicons name="sync-outline" size={20} color={colors.white} />
+                        <Text style={styles.actionButtonText}>Sync Bank Connections</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.sectionContainer}>
                     <View style={styles.emptyState}>
                       <View style={styles.emptyIconContainer}>
                         <Ionicons name="link-outline" size={50} color={colors.textMuted} />
@@ -204,49 +223,39 @@ export default function BankConnections() {
                       <Text style={styles.noDataTitle}>No bank connections yet</Text>
                       <Text style={styles.noData}>Add a connection to start tracking your finances automatically</Text>
                     </View>
-                  )}
-
-                  {user && user.bankConnections.length > 0 && (
-                    <TouchableOpacity style={styles.syncButton} onPress={handleUpdateBankConnections}>
-                      <Ionicons name="sync-outline" size={20} color={colors.white} />
-                      <Text style={styles.actionButtonText}>Sync Bank Connections</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <View style={{ marginTop: 15 }}>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => setShowAddModal(true)}>
-                      <Ionicons name="add-circle-outline" size={20} color={colors.white} />
-                      <Text style={styles.actionButtonText}>Add Bank Connection</Text>
-                    </TouchableOpacity>
-
-                    {pendingRequisitionId && (
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.finalizeButton]}
-                        onPress={async () => {
-                          const username = await AsyncStorage.getItem("username");
-                          if (!username) {
-                            Alert.alert("Error", "Username not found in local storage");
-                            return;
-                          }
-                          try {
-                            await linkBankConnection(username, pendingRequisitionId);
-                            Alert.alert("Success", "Bank connection linked successfully.");
-                            await AsyncStorage.removeItem("pendingRequisitionId");
-                            setPendingRequisitionId(null);
-                            const updatedUser = await updateBankConnections(username);
-                            setUser(updatedUser);
-                            await refreshTransactions();
-                          } catch (error: any) {
-                            Alert.alert("Error", error.message);
-                          }
-                        }}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
-                        <Text style={styles.actionButtonText}>Finalize Linking</Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
-                </View>
+                )}
+
+                {/* Pending Connection Button - Only shown when needed */}
+                {pendingRequisitionId && (
+                  <View style={styles.sectionContainer}>
+                    <Text style={styles.pageSection}>Pending Connection</Text>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.finalizeButton]}
+                      onPress={async () => {
+                        const username = await AsyncStorage.getItem("username");
+                        if (!username) {
+                          Alert.alert("Error", "Username not found in local storage");
+                          return;
+                        }
+                        try {
+                          await linkBankConnection(username, pendingRequisitionId);
+                          Alert.alert("Success", "Bank connection linked successfully.");
+                          await AsyncStorage.removeItem("pendingRequisitionId");
+                          setPendingRequisitionId(null);
+                          const updatedUser = await updateBankConnections(username);
+                          setUser(updatedUser);
+                          await refreshTransactions();
+                        } catch (error: any) {
+                          Alert.alert("Error", error.message);
+                        }
+                      }}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
+                      <Text style={styles.actionButtonText}>Finalize Linking</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </>
             )}
           </ScrollView>
@@ -409,14 +418,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   syncButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.info,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
     marginTop: 15,
     flexDirection: "row",
     justifyContent: "center",
-    shadowColor: colors.accent,
+    shadowColor: colors.info,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -473,5 +482,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginHorizontal: 20,
     lineHeight: 22,
+  },
+  primaryActionContainer: {
+    alignItems: "center",
+    marginBottom: 20,
   },
 });

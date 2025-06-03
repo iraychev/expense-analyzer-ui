@@ -59,9 +59,14 @@ export default function Profile() {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
-          await AsyncStorage.removeItem("token");
-          await AsyncStorage.removeItem("username");
-          router.push("/auth/login");
+          try {
+            await AsyncStorage.removeItem("token");
+            await AsyncStorage.removeItem("username");
+            router.replace("/auth/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", "Failed to logout. Please try again.");
+          }
         },
       },
     ]);
@@ -83,8 +88,12 @@ export default function Profile() {
             await deleteUser(username);
             await AsyncStorage.removeItem("token");
             await AsyncStorage.removeItem("username");
-            Alert.alert("Account Deleted", "Your account has been deleted.");
-            router.push("/auth/register");
+            Alert.alert("Account Deleted", "Your account has been deleted.", [
+              {
+                text: "OK",
+                onPress: () => router.replace("/auth/register"),
+              },
+            ]);
           } catch (error: any) {
             Alert.alert("Failed to delete account", error.message);
           }

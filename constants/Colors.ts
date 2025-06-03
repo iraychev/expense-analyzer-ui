@@ -5,11 +5,6 @@ export const colors = {
     start: "#667eea",
     end: "#764ba2",
   },
-  // Subtle gradient option
-  subtleGradient: {
-    start: "#F7F9FB",
-    end: "#E9EFFA",
-  },
 
   // Base colors
   white: "#FFFFFF",
@@ -21,11 +16,10 @@ export const colors = {
   primaryDark: "#4C1D95", // Darker purple
 
   // Semantic colors
-  accent: "#10B981", // Green for positive actions
+  info: "#3B82F6", // Blue for informational actions
+  success: "#10B981", // Green for success/positive
   danger: "#EF4444", // Red for negative/delete
   warning: "#F59E0B", // Orange for warnings
-  success: "#10B981", // Green
-  info: "#3B82F6", // Blue
 
   // Text colors
   text: "#1F2937", // Primary text
@@ -39,10 +33,6 @@ export const colors = {
 
   // Shadow
   shadow: "#000000",
-
-  // Chart colors
-  chartPrimary: "#667eea",
-  chartSecondary: "#764ba2",
 
   // Income/Expense specific
   income: "#10B981",
