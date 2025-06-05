@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useCallback, useEffect } fr
 import { Transaction } from "@/interface/Transaction";
 import { fetchTransactions } from "@/api/transactionService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
 
 type TransactionContextType = {
   transactions: Transaction[];
@@ -39,9 +38,17 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-  // Load transactions when the provider mounts
   useEffect(() => {
-    refreshTransactions();
+    const checkAndRefresh = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        refreshTransactions();
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    checkAndRefresh();
   }, [refreshTransactions]);
 
   return (

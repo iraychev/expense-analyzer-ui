@@ -1,13 +1,20 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
-import { router } from "expo-router"; // Import router directly, not useRouter
+import { router } from "expo-router";
 
-// Flag to prevent multiple logout attempts
 let isLoggingOut = false;
 
+const getApiBaseUrl = () => {
+  if (__DEV__) {
+    return 'http://192.168.11.110:8080/api/v1';
+  }
+  
+  return 'https://expense-analyzer-production.up.railway.app/api/v1';
+};
+
 const axiosInstance = axios.create({
-  baseURL: "http://192.168.11.110:8080/api/v1",
+  baseURL: getApiBaseUrl(),
 });
 
 axiosInstance.interceptors.request.use(
@@ -22,6 +29,7 @@ axiosInstance.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
 
 axiosInstance.interceptors.response.use(
   (response) => response,
