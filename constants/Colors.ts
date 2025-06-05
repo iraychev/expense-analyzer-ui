@@ -40,16 +40,14 @@ export const colors = {
 };
 
 export const colorPalette = [
-  "#667eea", // Purple
-  "#764ba2", // Pink Purple
-  "#10B981", // Green
-  "#F59E0B", // Orange
-  "#3B82F6", // Blue
-  "#EF4444", // Red
-  "#8B5CF6", // Violet
-  "#EC4899", // Pink
-  "#14B8A6", // Teal
-  "#F97316", // Dark Orange
+  "#36A2EB", // Bright blue
+  "#FF6384", // Bright pink
+  "#FFCE56", // Bright yellow
+  "#4BC0C0", // Turquoise
+  "#9966FF", // Purple
+  "#FF9F40", // Orange
+  "#FF5A5E", // Red
+  "#2ECC71", // Green
 ];
 
 // Dark theme colors (for future implementation)

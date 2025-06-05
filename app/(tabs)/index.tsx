@@ -17,6 +17,7 @@ import { useTransactions } from "@/context/TransactionContext";
 import { colorPalette } from "@/constants/Colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -33,7 +34,9 @@ export default function Index() {
   const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
   const [lastMonthTotal, setLastMonthTotal] = useState(0);
   const [percentageChange, setPercentageChange] = useState(0);
+  const [selectedMonthView, setSelectedMonthView] = useState<"current" | "previous">("current");
   const screenWidth = Dimensions.get("window").width;
+  const router = useRouter();
 
   useEffect(() => {
     const now = new Date();
@@ -180,12 +183,25 @@ export default function Index() {
 
         setSuggestions(newSuggestions);
 
-        const chartArray = Object.keys(chartExpenseByCategory)
-          .sort((a, b) => chartExpenseByCategory[b] - chartExpenseByCategory[a])
+        const displayData =
+          selectedMonthView === "current"
+            ? {
+                total: currentMonthExpense,
+                expenseByCategory: currentMonthExpenseByCategory,
+                label: "This Month",
+              }
+            : {
+                total: lastMonthExpense,
+                expenseByCategory: lastMonthExpenseByCategory,
+                label: "Last Month",
+              };
+
+        const chartArray = Object.keys(displayData.expenseByCategory)
+          .sort((a, b) => displayData.expenseByCategory[b] - displayData.expenseByCategory[a])
           .map((category, index) => ({
             name: category,
-            amount: formatNumber(chartExpenseByCategory[category]),
-            value: parseFloat(chartExpenseByCategory[category].toFixed(2)),
+            amount: formatNumber(displayData.expenseByCategory[category]),
+            value: parseFloat(displayData.expenseByCategory[category].toFixed(2)),
             color: colorPalette[index % colorPalette.length],
             legendFontColor: colors.text,
             legendFontSize: 12,
@@ -198,7 +214,7 @@ export default function Index() {
     };
 
     analyzeTransactions();
-  }, [transactions, loading]);
+  }, [transactions, loading, selectedMonthView]);
 
   useEffect(() => {
     refreshTransactions();
@@ -226,7 +242,7 @@ export default function Index() {
               <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <>
-                {/* Balance Card */}
+                {/* Balance Card*/}
                 <View style={styles.balanceCard}>
                   <LinearGradient
                     colors={[colors.info, colors.primaryDark]}
@@ -234,24 +250,71 @@ export default function Index() {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                   >
-                    <Text style={styles.balanceLabel}>This Month</Text>
-                    <Text style={styles.balanceAmount}>
-                      -{formatNumber(currentMonthTotal)} {transactions[0]?.currency || "EUR"}
-                    </Text>
-                    <View style={styles.balanceComparison}>
-                      <Ionicons
-                        name={percentageChange > 0 ? "arrow-up" : "arrow-down"}
-                        size={16}
-                        color={colors.white}
-                      />
-                      <Text style={styles.comparisonText}>{Math.abs(percentageChange).toFixed(1)}% vs last month</Text>
+                    <View style={styles.monthToggleContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.monthToggleButton,
+                          selectedMonthView === "current" && styles.monthToggleButtonActive,
+                        ]}
+                        onPress={() => setSelectedMonthView("current")}
+                      >
+                        <Text
+                          style={[
+                            styles.monthToggleText,
+                            selectedMonthView === "current" && styles.monthToggleTextActive,
+                          ]}
+                        >
+                          This Month
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.monthToggleButton,
+                          selectedMonthView === "previous" && styles.monthToggleButtonActive,
+                        ]}
+                        onPress={() => setSelectedMonthView("previous")}
+                      >
+                        <Text
+                          style={[
+                            styles.monthToggleText,
+                            selectedMonthView === "previous" && styles.monthToggleTextActive,
+                          ]}
+                        >
+                          Last Month
+                        </Text>
+                      </TouchableOpacity>
                     </View>
+
+                    <Text style={styles.balanceAmount}>
+                      -{formatNumber(selectedMonthView === "current" ? currentMonthTotal : lastMonthTotal)}{" "}
+                      {transactions[0]?.currency || "EUR"}
+                    </Text>
+
+                    {selectedMonthView === "current" && (
+                      <View style={styles.balanceComparison}>
+                        <Ionicons
+                          name={percentageChange > 0 ? "arrow-up" : "arrow-down"}
+                          size={16}
+                          color={colors.white}
+                        />
+                        <Text style={styles.comparisonText}>
+                          {Math.abs(percentageChange).toFixed(1)}% vs last month
+                        </Text>
+                      </View>
+                    )}
                   </LinearGradient>
                 </View>
 
-                <Text style={styles.pageSection}>Spending Insights</Text>
+                <View style={styles.sectionHeaderContainer}>
+                  <Text style={styles.pageSection}>Spending Insights</Text>
+                  <TouchableOpacity style={styles.seeMoreButton} onPress={() => router.push("/transactions")}>
+                    <Text style={styles.seeMoreButtonText}>See Transactions</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+
                 <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>📊 This Month Breakdown</Text>
+                  <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
                   {chartData.length > 0 ? (
                     <View style={styles.chartWrapper}>
                       <PieChart
@@ -369,11 +432,28 @@ const styles = StyleSheet.create({
     padding: 25,
     alignItems: "center",
   },
-  balanceLabel: {
-    fontSize: 16,
+  monthToggleContainer: {
+    flexDirection: "row",
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    marginBottom: 15,
+    padding: 4,
+  },
+  monthToggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  monthToggleButtonActive: {
+    backgroundColor: colors.white,
+  },
+  monthToggleText: {
     color: colors.white,
-    opacity: 0.9,
-    marginBottom: 5,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  monthToggleTextActive: {
+    color: colors.primary,
   },
   balanceAmount: {
     fontSize: 36,
@@ -402,6 +482,29 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     paddingLeft: 10,
+  },
+  sectionHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  seeMoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  seeMoreButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "600",
+    marginRight: 4,
   },
   sectionContainer: {
     backgroundColor: colors.card,
