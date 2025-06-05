@@ -17,10 +17,12 @@ import { User } from "@/interface/User";
 import Head from "expo-router/head";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import TermsAndConditionsModal from "../modals/TermsAndConditionsModal";
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -160,29 +162,15 @@ export default function Profile() {
 
                 <Text style={styles.pageSection}>Settings</Text>
                 <View style={styles.sectionContainer}>
-                  <TouchableOpacity style={styles.settingItem}>
-                    <View style={styles.settingLeft}>
-                      <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-                      <Text style={styles.settingLabel}>Notifications</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
                   <View style={styles.divider} />
-                  <TouchableOpacity style={styles.settingItem}>
-                    <View style={styles.settingLeft}>
-                      <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-                      <Text style={styles.settingLabel}>Privacy</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.settingItem}>
+                  <TouchableOpacity style={styles.settingItem} onPress={() => setShowTermsModal(true)}>
                     <View style={styles.settingLeft}>
                       <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
-                      <Text style={styles.settingLabel}>Help & Support</Text>
+                      <Text style={styles.settingLabel}>Terms and Conditions</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
+                  <View style={styles.divider} />
                 </View>
 
                 <Text style={styles.pageSection}>Account Actions</Text>
@@ -201,6 +189,7 @@ export default function Profile() {
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>
+      <TermsAndConditionsModal visible={showTermsModal} onClose={() => setShowTermsModal(false)} />
     </>
   );
 }

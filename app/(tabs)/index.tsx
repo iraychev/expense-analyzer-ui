@@ -26,7 +26,7 @@ const formatNumber = (num: number): string => {
 };
 
 export default function Index() {
-  const { transactions, isLoading: loading } = useTransactions();
+  const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [greeting, setGreeting] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -199,6 +199,10 @@ export default function Index() {
 
     analyzeTransactions();
   }, [transactions, loading]);
+
+  useEffect(() => {
+    refreshTransactions();
+  }, []);
 
   return (
     <>

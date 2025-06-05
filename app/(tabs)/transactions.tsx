@@ -24,7 +24,6 @@ export default function Transactions() {
   const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedType, setSelectedType] = useState<"all" | "income" | "expense">("all");
-  const [selectedMonth, setSelectedMonth] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [tempCategory, setTempCategory] = useState<string>(selectedCategory);
@@ -43,7 +42,10 @@ export default function Transactions() {
       months.push(`${year} ${monthName}`);
     }
   }
+  const latestMonth = months.length > 0 ? months[months.length - 1] : "All";
   months.push("All");
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(latestMonth);
 
   const scrollViewRef = useRef<ScrollView>(null);
   useEffect(() => {
