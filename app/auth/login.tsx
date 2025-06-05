@@ -89,9 +89,6 @@ export default function Login() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.loginButton, loading && styles.disabledButton]}
@@ -186,15 +183,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     fontSize: 16,
     color: colors.text,
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "600",
   },
   loginButton: {
     backgroundColor: colors.primary,

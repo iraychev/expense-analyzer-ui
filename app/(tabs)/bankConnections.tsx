@@ -28,6 +28,7 @@ export default function BankConnections() {
   const [loading, setLoading] = useState<boolean>(true);
   const [pendingRequisitionId, setPendingRequisitionId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [syncing, setSyncing] = useState<boolean>(false);
   const router = useRouter();
   const { refreshTransactions } = useTransactions();
 
@@ -76,6 +77,8 @@ export default function BankConnections() {
       Alert.alert("Error", "Username not found in local storage");
       return;
     }
+
+    setSyncing(true);
     try {
       const updatedUser = await updateBankConnections(username);
       setUser(updatedUser);
@@ -83,6 +86,8 @@ export default function BankConnections() {
       Alert.alert("Success", "Bank connections and transactions updated successfully");
     } catch (error: any) {
       Alert.alert("Update Failed", error.message);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -208,9 +213,19 @@ export default function BankConnections() {
                       ))}
 
                       {/* Sync Button - Only shown when connections exist */}
-                      <TouchableOpacity style={styles.syncButton} onPress={handleUpdateBankConnections}>
-                        <Ionicons name="sync-outline" size={20} color={colors.white} />
-                        <Text style={styles.actionButtonText}>Sync Bank Connections</Text>
+                      <TouchableOpacity
+                        style={[styles.syncButton, syncing && styles.disabledButton]}
+                        onPress={handleUpdateBankConnections}
+                        disabled={syncing}
+                      >
+                        {syncing ? (
+                          <ActivityIndicator size="small" color={colors.white} />
+                        ) : (
+                          <Ionicons name="sync-outline" size={20} color={colors.white} />
+                        )}
+                        <Text style={styles.actionButtonText}>
+                          {syncing ? "Syncing Transactions..." : "Sync Transactions & Accounts"}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </>
@@ -430,6 +445,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledButton: {
+    opacity: 0.7,
+    backgroundColor: colors.info + "80",
   },
   deleteButton: {
     backgroundColor: colors.danger,

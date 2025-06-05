@@ -11,12 +11,12 @@ import {
   ActivityIndicator,
   TextInput,
 } from "react-native";
-import RNPickerSelect from "react-native-picker-select";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants/Colors";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { Picker } from "@react-native-picker/picker";
 
 const ITEM_HEIGHT = 100;
 
@@ -217,20 +217,17 @@ export default function Transactions() {
                 <View style={styles.modalContainer}>
                   <Text style={styles.modalTitle}>Filter Transactions</Text>
                   <Text style={styles.filterLabel}>Category</Text>
-                  <RNPickerSelect
-                    onValueChange={(value: string) => setTempCategory(value)}
-                    items={[
-                      { label: "All Categories", value: "" },
-                      ...categories.map((category) => ({
-                        label: category,
-                        value: category,
-                      })),
-                    ]}
-                    style={pickerSelectStyles}
-                    value={tempCategory}
-                    useNativeAndroidPickerStyle={false}
-                    placeholder={{ label: "Select a category", value: null }}
-                  />
+                  <Picker
+                    selectedValue={tempCategory}
+                    onValueChange={(itemValue) => setTempCategory(itemValue)}
+                    style={styles.picker}
+                    dropdownIconColor={colors.primary}
+                  >
+                    <Picker.Item label="All Categories" value="" />
+                    {categories.map((category) => (
+                      <Picker.Item key={category} label={category} value={category} />
+                    ))}
+                  </Picker>
 
                   <Text style={styles.filterLabel}>Transaction Type</Text>
                   <View style={styles.toggleContainer}>
@@ -562,6 +559,16 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 40,
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+    marginBottom: 20,
+    color: colors.text,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 });
 

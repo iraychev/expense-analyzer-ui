@@ -17,6 +17,7 @@ import { colors } from "@/constants/Colors";
 import { register } from "@/api/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import TermsAndConditionsModal from "../modals/TermsAndConditionsModal";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -28,6 +29,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleRegister = async () => {
     // Validation
@@ -113,7 +115,7 @@ export default function Register() {
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   keyboardType="email-address"
-                  placeholder="Email (optional)"
+                  placeholder="Email *"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
@@ -186,8 +188,10 @@ export default function Register() {
 
               <View style={styles.termsContainer}>
                 <Text style={styles.termsText}>
-                  By creating an account, you agree to our <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                  By creating an account, you agree to our{" "}
+                  <TouchableOpacity onPress={() => setShowTermsModal(true)}>
+                    <Text style={styles.termsLink}>View Terms and Conditions</Text>
+                  </TouchableOpacity>
                 </Text>
               </View>
 
@@ -206,6 +210,7 @@ export default function Register() {
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
+      <TermsAndConditionsModal visible={showTermsModal} onClose={() => setShowTermsModal(false)} />
     </>
   );
 }
