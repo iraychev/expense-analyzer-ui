@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "expense-analyzer-ui",
-    "slug": "expense-analyzer-ui",
+    "name": "Expense Analyzer",
+    "slug": "expense-analyzer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
