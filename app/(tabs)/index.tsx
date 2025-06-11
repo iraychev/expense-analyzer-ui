@@ -243,143 +243,163 @@ export default function Index() {
               <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <>
-                {/* Balance Card*/}
-                <View style={styles.balanceCard}>
-                  <LinearGradient
-                    colors={[colors.info, colors.primaryDark]}
-                    style={styles.balanceGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View style={styles.monthToggleContainer}>
-                      <TouchableOpacity
-                        style={[
-                          styles.monthToggleButton,
-                          selectedMonthView === "current" && styles.monthToggleButtonActive,
-                        ]}
-                        onPress={() => setSelectedMonthView("current")}
+                {transactions.length > 0 ? (
+                  <>
+                    {/* Balance Card*/}
+                    <View style={styles.balanceCard}>
+                      <LinearGradient
+                        colors={[colors.info, colors.primaryDark]}
+                        style={styles.balanceGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                       >
-                        <Text
-                          style={[
-                            styles.monthToggleText,
-                            selectedMonthView === "current" && styles.monthToggleTextActive,
-                          ]}
-                        >
-                          This Month
+                        <View style={styles.monthToggleContainer}>
+                          <TouchableOpacity
+                            style={[
+                              styles.monthToggleButton,
+                              selectedMonthView === "current" && styles.monthToggleButtonActive,
+                            ]}
+                            onPress={() => setSelectedMonthView("current")}
+                          >
+                            <Text
+                              style={[
+                                styles.monthToggleText,
+                                selectedMonthView === "current" && styles.monthToggleTextActive,
+                              ]}
+                            >
+                              This Month
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.monthToggleButton,
+                              selectedMonthView === "previous" && styles.monthToggleButtonActive,
+                            ]}
+                            onPress={() => setSelectedMonthView("previous")}
+                          >
+                            <Text
+                              style={[
+                                styles.monthToggleText,
+                                selectedMonthView === "previous" && styles.monthToggleTextActive,
+                              ]}
+                            >
+                              Last Month
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.balanceAmount}>
+                          -{formatNumber(selectedMonthView === "current" ? currentMonthTotal : lastMonthTotal)}{" "}
+                          {transactions[0]?.currency || "EUR"}
                         </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.monthToggleButton,
-                          selectedMonthView === "previous" && styles.monthToggleButtonActive,
-                        ]}
-                        onPress={() => setSelectedMonthView("previous")}
-                      >
-                        <Text
-                          style={[
-                            styles.monthToggleText,
-                            selectedMonthView === "previous" && styles.monthToggleTextActive,
-                          ]}
-                        >
-                          Last Month
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
 
-                    <Text style={styles.balanceAmount}>
-                      -{formatNumber(selectedMonthView === "current" ? currentMonthTotal : lastMonthTotal)}{" "}
-                      {transactions[0]?.currency || "EUR"}
-                    </Text>
-
-                    {selectedMonthView === "current" && (
-                      <View style={styles.balanceComparison}>
-                        <Ionicons
-                          name={percentageChange > 0 ? "arrow-up" : "arrow-down"}
-                          size={16}
-                          color={colors.white}
-                        />
-                        <Text style={styles.comparisonText}>
-                          {Math.abs(percentageChange).toFixed(1)}% vs last month
-                        </Text>
-                      </View>
-                    )}
-                  </LinearGradient>
-                </View>
-
-                <View style={styles.sectionHeaderContainer}>
-                  <Text style={styles.pageSection}>Insights</Text>
-                  <TouchableOpacity style={styles.seeMoreButton} onPress={() => router.push("/transactions")}>
-                    <Text style={styles.seeMoreButtonText}>See Transactions</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.white} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.sectionContainer}>
-                  <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
-                  {chartData.length > 0 ? (
-                    <View style={styles.chartWrapper}>
-                      <PieChart
-                        data={chartData}
-                        width={screenWidth - 20}
-                        height={220}
-                        chartConfig={{
-                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                          labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
-                        }}
-                        accessor="value"
-                        backgroundColor="transparent"
-                        paddingLeft="0"
-                        center={[screenWidth / 4, 0]}
-                        absolute
-                        hasLegend={false}
-                      />
-                      <View style={styles.customLegend}>
-                        {chartData.map((item, index) => (
-                          <View key={index} style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                            <Text style={styles.legendLabel}>
-                              <Text style={styles.legendCategory}>{item.name}</Text>
-                              {`: ${item.amount} ${transactions[0]?.currency || ""}`}
+                        {selectedMonthView === "current" && (
+                          <View style={styles.balanceComparison}>
+                            <Ionicons
+                              name={percentageChange > 0 ? "arrow-up" : "arrow-down"}
+                              size={16}
+                              color={colors.white}
+                            />
+                            <Text style={styles.comparisonText}>
+                              {Math.abs(percentageChange).toFixed(1)}% vs last month
                             </Text>
                           </View>
-                        ))}
-                      </View>
-                      <View style={styles.totalContainer}>
-                        <Text style={styles.totalAmount}>
-                          Total: {formatNumber(chartData.reduce((sum, item) => sum + item.value, 0))}{" "}
-                          {transactions[0]?.currency || ""}
-                        </Text>
-                      </View>
+                        )}
+                      </LinearGradient>
                     </View>
-                  ) : (
-                    <Text style={styles.noData}>No expense data available for this month</Text>
-                  )}
-                </View>
 
-                <Text style={styles.pageSection}>Smart Recommendations</Text>
-                <View style={styles.sectionContainer}>
-                  {suggestions.length > 0 ? (
-                    suggestions.map((suggestion, index) => (
-                      <View key={index} style={styles.suggestionBox}>
-                        <View style={styles.suggestionHeader}>
-                          <Ionicons name={suggestion.icon as any} size={20} color={colors.primary} />
-                          <Text style={styles.tipPeriod}>{suggestion.period}</Text>
-                        </View>
-                        <Text style={styles.suggestionText}>{suggestion.text}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <View style={styles.suggestionBox}>
-                      <View style={styles.suggestionHeader}>
-                        <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                        <Text style={styles.tipPeriod}>ANALYSIS</Text>
-                      </View>
-                      <Text style={styles.suggestionText}>
-                        🎉 No specific recommendations available. Keep up the good work!
-                      </Text>
+                    <View style={styles.sectionHeaderContainer}>
+                      <Text style={styles.pageSection}>Insights</Text>
+                      <TouchableOpacity style={styles.seeMoreButton} onPress={() => router.push("/transactions")}>
+                        <Text style={styles.seeMoreButtonText}>See Transactions</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.white} />
+                      </TouchableOpacity>
                     </View>
-                  )}
-                </View>
+
+                    <View style={styles.sectionContainer}>
+                      <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
+                      {chartData.length > 0 ? (
+                        <View style={styles.chartWrapper}>
+                          <PieChart
+                            data={chartData}
+                            width={screenWidth - 20}
+                            height={220}
+                            chartConfig={{
+                              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                              labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
+                            }}
+                            accessor="value"
+                            backgroundColor="transparent"
+                            paddingLeft="0"
+                            center={[screenWidth / 4, 0]}
+                            absolute
+                            hasLegend={false}
+                          />
+                          <View style={styles.customLegend}>
+                            {chartData.map((item, index) => (
+                              <View key={index} style={styles.legendItem}>
+                                <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                                <Text style={styles.legendLabel}>
+                                  <Text style={styles.legendCategory}>{item.name}</Text>
+                                  {`: ${item.amount} ${transactions[0]?.currency || ""}`}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                          <View style={styles.totalContainer}>
+                            <Text style={styles.totalAmount}>
+                              Total: {formatNumber(chartData.reduce((sum, item) => sum + item.value, 0))}{" "}
+                              {transactions[0]?.currency || ""}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <Text style={styles.noData}>No expense data available for this month</Text>
+                      )}
+                    </View>
+
+                    <Text style={styles.pageSection}>Smart Recommendations</Text>
+                    <View style={styles.sectionContainer}>
+                      {suggestions.length > 0 ? (
+                        suggestions.map((suggestion, index) => (
+                          <View key={index} style={styles.suggestionBox}>
+                            <View style={styles.suggestionHeader}>
+                              <Ionicons name={suggestion.icon as any} size={20} color={colors.primary} />
+                              <Text style={styles.tipPeriod}>{suggestion.period}</Text>
+                            </View>
+                            <Text style={styles.suggestionText}>{suggestion.text}</Text>
+                          </View>
+                        ))
+                      ) : (
+                        <View style={styles.suggestionBox}>
+                          <View style={styles.suggestionHeader}>
+                            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                            <Text style={styles.tipPeriod}>ANALYSIS</Text>
+                          </View>
+                          <Text style={styles.suggestionText}>
+                            🎉 No specific recommendations available. Keep up the good work!
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.sectionContainer}>
+                    <View style={styles.emptyState}>
+                      <View style={styles.emptyIconContainer}>
+                        <Ionicons name="analytics-outline" size={50} color={colors.textMuted} />
+                      </View>
+                      <Text style={styles.noDataTitle}>No transaction data yet</Text>
+                      <Text style={styles.noData}>
+                        Connect your bank accounts to start tracking and analyzing your expenses automatically
+                      </Text>
+                      <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/bankConnections")}>
+                        <Ionicons name="link-outline" size={20} color={colors.white} />
+                        <Text style={styles.actionButtonText}>Add Bank Connection</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </>
             )}
           </ScrollView>
@@ -537,8 +557,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: "center",
-    marginVertical: 30,
-    fontStyle: "italic",
+    marginHorizontal: 20,
+    lineHeight: 22,
+    marginBottom: 30,
   },
   chartWrapper: { alignItems: "center", width: "100%" },
   totalContainer: {
@@ -599,5 +620,45 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.text,
     marginTop: 4,
+  },
+  emptyState: {
+    alignItems: "center",
+    marginVertical: 60,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  noDataTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 10,
+  },
+  actionButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginVertical: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    paddingHorizontal: 30,
+  },
+  actionButtonText: {
+    color: colors.white,
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 8,
   },
 });

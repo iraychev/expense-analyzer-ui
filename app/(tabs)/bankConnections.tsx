@@ -21,6 +21,7 @@ export default function BankConnections() {
   const [pendingRequisitionId, setPendingRequisitionId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [finalizing, setFinalizing] = useState<boolean>(false);
   const router = useRouter();
   const { refreshTransactions } = useTransactions();
   const { showAlert } = useAlert();
@@ -243,28 +244,43 @@ export default function BankConnections() {
                   <View style={styles.sectionContainer}>
                     <Text style={styles.pageSection}>Pending Connection</Text>
                     <TouchableOpacity
-                      style={[styles.actionButton, styles.finalizeButton]}
+                      style={[styles.actionButton, styles.finalizeButton, finalizing && styles.disabledButton]}
+                      disabled={finalizing}
                       onPress={async () => {
                         const username = await AsyncStorage.getItem("username");
                         if (!username) {
                           showAlert("Error", "Username not found in local storage");
                           return;
                         }
+
+                        setFinalizing(true);
                         try {
                           await linkBankConnection(username, pendingRequisitionId);
                           showAlert("Success", "Bank connection linked successfully.");
                           await AsyncStorage.removeItem("pendingRequisitionId");
                           setPendingRequisitionId(null);
+
+                          setSyncing(true);
                           const updatedUser = await updateBankConnections(username);
                           setUser(updatedUser);
                           await refreshTransactions();
+                          showAlert("Success", "Bank connection and transactions updated successfully");
                         } catch (error: any) {
                           showAlert("Error", error.message);
+                        } finally {
+                          setFinalizing(false);
+                          setSyncing(false);
                         }
                       }}
                     >
-                      <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
-                      <Text style={styles.actionButtonText}>Finalize Linking</Text>
+                      {finalizing ? (
+                        <ActivityIndicator size="small" color={colors.white} />
+                      ) : (
+                        <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
+                      )}
+                      <Text style={styles.actionButtonText}>
+                        {finalizing ? "Finalizing..." : "Finalize Linking"}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 )}

@@ -29,7 +29,6 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
   const { showAlert } = useAlert();
 
   const handleCreateRequisition = async () => {
-    // Clear previous validation errors
     setValidationError("");
 
     if (!reference) {
