@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
-import { PieChart } from "react-native-chart-kit";
+import PieChart from "@/components/PieChart";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { colorPalette } from "@/constants/Colors";
@@ -320,20 +320,10 @@ export default function Index() {
                       <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
                       {chartData.length > 0 ? (
                         <View style={styles.chartWrapper}>
-                          <PieChart
-                            data={chartData}
-                            width={screenWidth - 20}
-                            height={220}
-                            chartConfig={{
-                              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                              labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
-                            }}
-                            accessor="value"
-                            backgroundColor="transparent"
-                            paddingLeft="0"
-                            center={[screenWidth / 4, 0]}
-                            absolute
-                            hasLegend={false}
+                          <PieChart 
+                            data={chartData} 
+                            width={screenWidth - 60} 
+                            height={220} 
                           />
                           <View style={styles.customLegend}>
                             {chartData.map((item, index) => (
