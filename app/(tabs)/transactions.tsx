@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from "react-native";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { colors } from "@/constants/Colors";
@@ -303,6 +304,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === "android" ? 25 : 0,
   },
   container: {
     flex: 1,

@@ -8,6 +8,7 @@ import {
   Dimensions,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
@@ -306,7 +307,7 @@ export default function Index() {
                 </View>
 
                 <View style={styles.sectionHeaderContainer}>
-                  <Text style={styles.pageSection}>Spending Insights</Text>
+                  <Text style={styles.pageSection}>Insights</Text>
                   <TouchableOpacity style={styles.seeMoreButton} onPress={() => router.push("/transactions")}>
                     <Text style={styles.seeMoreButtonText}>See Transactions</Text>
                     <Ionicons name="chevron-forward" size={16} color={colors.white} />
@@ -392,7 +393,10 @@ const styles = StyleSheet.create({
   gradientBackground: {
     flex: 1,
   },
-  safeArea: { flex: 1 },
+  safeArea: {
+    flex: 1,
+    paddingTop: Platform.OS === "android" ? 25 : 0,
+  },
   container: { flexGrow: 1, padding: 20 },
   greeting: {
     fontSize: 24,
@@ -499,6 +503,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
+    marginLeft: 10,
   },
   seeMoreButtonText: {
     color: colors.white,
