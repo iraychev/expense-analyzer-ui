@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import { register } from "@/api/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import TermsAndConditionsModal from "../modals/TermsAndConditionsModal";
+import { useAlert } from "@/context/AlertContext";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -30,31 +30,35 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const { showAlert } = useAlert();
 
   const handleRegister = async () => {
-    // Validation
     if (!name || !username || !password || !confirmPassword) {
-      Alert.alert("Validation Error", "Please fill in all required fields");
+      showAlert("Validation Error", "Please fill in all required fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Validation Error", "Passwords do not match");
+      showAlert("Validation Error", "Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Validation Error", "Password must be at least 6 characters long");
+      showAlert("Validation Error", "Password must be at least 6 characters long");
       return;
     }
 
     setLoading(true);
     try {
       const response = await register(username, password, name);
-      Alert.alert("Registration Successful", "Your account has been created successfully!");
-      router.push("/auth/login");
+      showAlert("Registration Successful", "Your account has been created successfully!", [
+        {
+          text: "OK",
+          onPress: () => router.push("/auth/login"),
+        },
+      ]);
     } catch (error: any) {
-      Alert.alert("Registration Failed", error.message);
+      showAlert("Registration Failed", error.message);
     } finally {
       setLoading(false);
     }

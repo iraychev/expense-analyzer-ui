@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Alert,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  SafeAreaView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
@@ -18,19 +9,21 @@ import Head from "expo-router/head";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import TermsAndConditionsModal from "../modals/TermsAndConditionsModal";
+import { useAlert } from "@/context/AlertContext";
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const router = useRouter();
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     let isMounted = true;
     const loadUser = async () => {
       const username = await AsyncStorage.getItem("username");
       if (!username) {
-        Alert.alert("Error", "Username not found in local storage");
+        showAlert("Error", "Username not found in local storage");
         return;
       }
       try {
@@ -40,7 +33,7 @@ export default function Profile() {
         }
       } catch (error: any) {
         if (isMounted) {
-          Alert.alert("Failed to fetch user data", error.message);
+          showAlert("Failed to fetch user data", error.message);
         }
       } finally {
         if (isMounted) {
@@ -55,7 +48,7 @@ export default function Profile() {
   }, []);
 
   const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+    showAlert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
@@ -67,7 +60,7 @@ export default function Profile() {
             router.replace("/auth/login");
           } catch (error) {
             console.error("Logout error:", error);
-            Alert.alert("Error", "Failed to logout. Please try again.");
+            showAlert("Error", "Failed to logout. Please try again.");
           }
         },
       },
@@ -75,7 +68,7 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = async () => {
-    Alert.alert("Delete Account", "Are you sure you want to delete your account? This action cannot be undone.", [
+    showAlert("Delete Account", "Are you sure you want to delete your account? This action cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -83,21 +76,21 @@ export default function Profile() {
         onPress: async () => {
           const username = await AsyncStorage.getItem("username");
           if (!username) {
-            Alert.alert("Error", "Username not found in local storage");
+            showAlert("Error", "Username not found in local storage");
             return;
           }
           try {
             await deleteUser(username);
             await AsyncStorage.removeItem("token");
             await AsyncStorage.removeItem("username");
-            Alert.alert("Account Deleted", "Your account has been deleted.", [
+            showAlert("Account Deleted", "Your account has been deleted.", [
               {
                 text: "OK",
                 onPress: () => router.replace("/auth/register"),
               },
             ]);
           } catch (error: any) {
-            Alert.alert("Failed to delete account", error.message);
+            showAlert("Failed to delete account", error.message);
           }
         },
       },

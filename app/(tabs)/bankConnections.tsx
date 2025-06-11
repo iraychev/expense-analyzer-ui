@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Alert,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  SafeAreaView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, SafeAreaView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
 import { fetchUser, updateBankConnections } from "@/api/userService";
@@ -21,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import AddBankConnectionModal from "@/app/modals/AddBankConnectionModal";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useAlert } from "@/context/AlertContext";
 
 export default function BankConnections() {
   const [user, setUser] = useState<User | null>(null);
@@ -31,13 +23,14 @@ export default function BankConnections() {
   const [syncing, setSyncing] = useState<boolean>(false);
   const router = useRouter();
   const { refreshTransactions } = useTransactions();
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     let isMounted = true;
     const loadUser = async () => {
       const username = await AsyncStorage.getItem("username");
       if (!username) {
-        Alert.alert("Error", "Username not found in local storage");
+        showAlert("Error", "Username not found in local storage");
         return;
       }
       try {
@@ -47,7 +40,7 @@ export default function BankConnections() {
         }
       } catch (error: any) {
         if (isMounted) {
-          Alert.alert("Failed to fetch user data", error.message);
+          showAlert("Failed to fetch user data", error.message);
         }
       } finally {
         if (isMounted) {
@@ -74,7 +67,7 @@ export default function BankConnections() {
   const handleUpdateBankConnections = async () => {
     const username = await AsyncStorage.getItem("username");
     if (!username) {
-      Alert.alert("Error", "Username not found in local storage");
+      showAlert("Error", "Username not found in local storage");
       return;
     }
 
@@ -83,31 +76,35 @@ export default function BankConnections() {
       const updatedUser = await updateBankConnections(username);
       setUser(updatedUser);
       await refreshTransactions();
-      Alert.alert("Success", "Bank connections and transactions updated successfully");
+      showAlert("Success", "Bank connections and transactions updated successfully");
     } catch (error: any) {
-      Alert.alert("Update Failed", error.message);
+      showAlert("Update Failed", error.message);
     } finally {
       setSyncing(false);
     }
   };
 
-  const handleDeleteConnection = async (requisitionId: string) => {
-    Alert.alert("Delete Connection", "Are you sure you want to delete this bank connection?", [
-      { text: "Cancel", style: "cancel" },
+  const handleDeleteConnection = (connectionId: string) => {
+    showAlert("Delete Connection", "Are you sure you want to delete this bank connection?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteBankConnection(requisitionId);
-            Alert.alert("Success", "Bank connection deleted successfully.");
+            await deleteBankConnection(connectionId);
+            // Refresh connections after deletion
             const username = await AsyncStorage.getItem("username");
             if (username) {
               const updatedUser = await updateBankConnections(username);
               setUser(updatedUser);
             }
+            showAlert("Success", "Bank connection deleted successfully.");
           } catch (error: any) {
-            Alert.alert("Error", error.message);
+            showAlert("Error", error.message);
           }
         },
       },
@@ -250,19 +247,19 @@ export default function BankConnections() {
                       onPress={async () => {
                         const username = await AsyncStorage.getItem("username");
                         if (!username) {
-                          Alert.alert("Error", "Username not found in local storage");
+                          showAlert("Error", "Username not found in local storage");
                           return;
                         }
                         try {
                           await linkBankConnection(username, pendingRequisitionId);
-                          Alert.alert("Success", "Bank connection linked successfully.");
+                          showAlert("Success", "Bank connection linked successfully.");
                           await AsyncStorage.removeItem("pendingRequisitionId");
                           setPendingRequisitionId(null);
                           const updatedUser = await updateBankConnections(username);
                           setUser(updatedUser);
                           await refreshTransactions();
                         } catch (error: any) {
-                          Alert.alert("Error", error.message);
+                          showAlert("Error", error.message);
                         }
                       }}
                     >

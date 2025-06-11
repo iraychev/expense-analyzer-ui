@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
 import { createRequisition } from "@/api/bankConnectionService";
 import * as Linking from "expo-linking";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useAlert } from "@/context/AlertContext";
 
 const institutions = [
   { id: "DSKBANK_STSABGSFXXX", name: "DSK", icon: "business" },
@@ -24,12 +25,18 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
   const [reference, setReference] = useState("");
   const [selectedInstitution, setSelectedInstitution] = useState(institutions[0]);
   const [loading, setLoading] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const { showAlert } = useAlert();
 
   const handleCreateRequisition = async () => {
+    // Clear previous validation errors
+    setValidationError("");
+
     if (!reference) {
-      Alert.alert("Validation", "Please provide a connection name.");
+      setValidationError("Please provide a connection name");
       return;
     }
+
     setLoading(true);
     try {
       const redirect = Linking.createURL("bankConnections");
@@ -42,13 +49,9 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
       });
       await AsyncStorage.setItem("pendingRequisitionId", requisition.id);
       Linking.openURL(requisition.link);
-      Alert.alert(
-        "Requisition Created",
-        "Complete the linking on the bank webpage. Once done, return to finalize linking."
-      );
       onSuccess(requisition.id);
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      setValidationError(error.message);
     } finally {
       setLoading(false);
     }
@@ -56,6 +59,7 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
 
   const resetAndClose = () => {
     setReference("");
+    setValidationError("");
     setSelectedInstitution(institutions[0]);
     onClose();
   };
@@ -77,34 +81,39 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
 
           <View style={styles.formContainer}>
             <Text style={styles.label}>Connection Name</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, validationError ? styles.inputError : null]}>
               <Ionicons name="bookmark-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="e.g., My Main Account"
                 value={reference}
-                onChangeText={setReference}
+                onChangeText={(text) => {
+                  setReference(text);
+                  if (validationError) setValidationError("");
+                }}
                 placeholderTextColor={colors.textMuted}
               />
             </View>
+
+            {validationError ? <Text style={styles.errorText}>{validationError}</Text> : null}
 
             <Text style={styles.label}>Select Institution</Text>
             <View style={styles.institutionGrid}>
               {institutions.map((inst) => (
                 <TouchableOpacity
                   key={inst.id}
-                  style={[styles.institutionItem, inst.id === selectedInstitution.id && styles.selectedInstitution]}
+                  style={[styles.institutionItem, selectedInstitution.id === inst.id && styles.selectedInstitution]}
                   onPress={() => setSelectedInstitution(inst)}
                 >
                   <Ionicons
                     name={inst.icon as any}
                     size={24}
-                    color={inst.id === selectedInstitution.id ? colors.white : colors.primary}
+                    color={selectedInstitution.id === inst.id ? colors.white : colors.primary}
                   />
                   <Text
                     style={[
                       styles.institutionText,
-                      inst.id === selectedInstitution.id && styles.selectedInstitutionText,
+                      selectedInstitution.id === inst.id && styles.selectedInstitutionText,
                     ]}
                   >
                     {inst.name}
@@ -124,12 +133,13 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
                 ) : (
                   <>
                     <Ionicons name="link-outline" size={20} color={colors.white} />
-                    <Text style={styles.actionButtonText}>Create Connection</Text>
+                    <Text style={styles.actionButtonText}>Connect Bank</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={resetAndClose}>
+                <Ionicons name="close-circle-outline" size={20} color={colors.text} />
                 <Text style={[styles.actionButtonText, styles.cancelButtonText]}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -163,6 +173,7 @@ const styles = StyleSheet.create({
     top: 20,
     right: 20,
     padding: 10,
+    zIndex: 10,
   },
   title: {
     fontSize: 28,
@@ -196,7 +207,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
     backgroundColor: colors.background,
-    marginBottom: 25,
+    marginBottom: 10,
+  },
+  inputError: {
+    borderColor: "red",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 15,
+    marginLeft: 5,
   },
   inputIcon: {
     marginRight: 10,

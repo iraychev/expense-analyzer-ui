@@ -1,16 +1,22 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
 import { router } from "expo-router";
+
+// Create a global alert handler
+let globalAlertHandler: (title: string, message: string, buttons?: any[]) => void;
+
+export const setGlobalAlertHandler = (handler: (title: string, message: string, buttons?: any[]) => void) => {
+  globalAlertHandler = handler;
+};
 
 let isLoggingOut = false;
 
 const getApiBaseUrl = () => {
   if (__DEV__) {
-    return 'http://192.168.11.110:8080/api/v1';
+    return "http://192.168.11.110:8080/api/v1";
   }
-  
-  return 'https://expense-analyzer-production.up.railway.app/api/v1';
+
+  return "https://expense-analyzer-production.up.railway.app/api/v1";
 };
 
 const axiosInstance = axios.create({
@@ -30,7 +36,6 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -41,10 +46,8 @@ axiosInstance.interceptors.response.use(
         await AsyncStorage.removeItem("token");
         await AsyncStorage.removeItem("username");
 
-        Alert.alert(
-          "Session Expired",
-          "Please log in again.",
-          [
+        if (globalAlertHandler) {
+          globalAlertHandler("Session Expired", "Please log in again.", [
             {
               text: "OK",
               onPress: () => {
@@ -54,9 +57,8 @@ axiosInstance.interceptors.response.use(
                 }, 100);
               },
             },
-          ],
-          { cancelable: false }
-        );
+          ]);
+        }
       } catch (err) {
         isLoggingOut = false;
         console.error("Error during logout:", err);

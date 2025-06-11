@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { login } from "@/api/auth";
 import Head from "expo-router/head";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useAlert } from "@/context/AlertContext";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -23,10 +23,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { showAlert } = useAlert();
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("Validation Error", "Please fill in all fields");
+      showAlert("Validation Error", "Please fill in all fields");
       return;
     }
 
@@ -36,7 +37,7 @@ export default function Login() {
       router.replace("/");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message;
-      Alert.alert("Login Failed", `Error: ${errorMessage}`);
+      showAlert("Login Failed", `Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,6 @@ export default function Login() {
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-
 
             <TouchableOpacity
               style={[styles.loginButton, loading && styles.disabledButton]}
