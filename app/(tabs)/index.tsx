@@ -11,14 +11,14 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "@/constants/Colors";
+import { colors, colorPalette } from "@/constants/Colors";
 import PieChart from "@/components/PieChart";
 import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
-import { colorPalette } from "@/constants/Colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { fetchAnalysis, AnalysisItem } from "@/api/analysisService";
 
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -30,12 +30,13 @@ const formatNumber = (num: number): string => {
 export default function Index() {
   const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [greeting, setGreeting] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<AnalysisItem[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
   const [lastMonthTotal, setLastMonthTotal] = useState(0);
   const [percentageChange, setPercentageChange] = useState(0);
   const [selectedMonthView, setSelectedMonthView] = useState<"current" | "previous">("current");
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const screenWidth = Dimensions.get("window").width;
   const router = useRouter();
 
@@ -48,56 +49,26 @@ export default function Index() {
       setGreeting(`Good ${timeOfDay}${name ? `, ${name}` : ""}!`);
     });
   }, []);
-
   useEffect(() => {
     if (loading || transactions.length === 0) return;
 
     const analyzeTransactions = async () => {
       try {
         const now = new Date();
-        const sevenDaysAgo = new Date(now);
-        sevenDaysAgo.setDate(now.getDate() - 7);
-        const thirtyDaysAgo = new Date(now);
-        thirtyDaysAgo.setDate(now.getDate() - 30);
         const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        let last7DaysExpense = 0;
-        let last30DaysExpense = 0;
         let currentMonthExpense = 0;
         let lastMonthExpense = 0;
-        let weekend30DaysExpense = 0;
-        let weekday30DaysExpense = 0;
-        let weekendDaysCount = 0;
-        let weekdayDaysCount = 0;
 
         const currentMonthExpenseByCategory: Record<string, number> = {};
         const lastMonthExpenseByCategory: Record<string, number> = {};
-        const chartExpenseByCategory: Record<string, number> = {};
-
-        for (let i = 0; i < 30; i++) {
-          const date = new Date(now);
-          date.setDate(now.getDate() - i);
-          date.getDay() === 0 || date.getDay() === 6 ? weekendDaysCount++ : weekdayDaysCount++;
-        }
 
         transactions.forEach((tx) => {
           if (tx.amount < 0) {
             const absAmount = Math.abs(tx.amount);
             const txDate = new Date(tx.valueDate);
-
-            if (txDate >= sevenDaysAgo && txDate <= now) {
-              last7DaysExpense += absAmount;
-            }
-
-            if (txDate >= thirtyDaysAgo && txDate <= now) {
-              last30DaysExpense += absAmount;
-              const dayOfWeek = txDate.getDay();
-              dayOfWeek === 0 || dayOfWeek === 6
-                ? (weekend30DaysExpense += absAmount)
-                : (weekday30DaysExpense += absAmount);
-            }
 
             if (txDate >= currentMonthStart && txDate <= now) {
               currentMonthExpense += absAmount;
@@ -109,10 +80,6 @@ export default function Index() {
               lastMonthExpense += absAmount;
               lastMonthExpenseByCategory[tx.category] = (lastMonthExpenseByCategory[tx.category] || 0) + absAmount;
             }
-
-            if (txDate >= currentMonthStart && txDate <= now) {
-              chartExpenseByCategory[tx.category] = (chartExpenseByCategory[tx.category] || 0) + absAmount;
-            }
           }
         });
 
@@ -120,69 +87,6 @@ export default function Index() {
         setLastMonthTotal(lastMonthExpense);
         const change = lastMonthExpense > 0 ? ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100 : 0;
         setPercentageChange(change);
-
-        const weekdayAverage = weekday30DaysExpense / weekdayDaysCount;
-        const weekendAverage = weekend30DaysExpense / weekendDaysCount;
-        const currency = transactions[0]?.currency || "";
-        const newSuggestions: any[] = [];
-
-        if (last7DaysExpense > 0) {
-          const dailyAverage = last7DaysExpense / 7;
-          newSuggestions.push({
-            period: "LAST 7 DAYS",
-            text: `You've spent ${formatNumber(last7DaysExpense)} ${currency} (avg ${formatNumber(
-              dailyAverage
-            )}/day). ${
-              dailyAverage > 50 ? "Consider setting daily spending limits." : "Keep maintaining this spending pattern."
-            }`,
-            icon: "trending-up",
-          });
-        }
-
-        if (weekend30DaysExpense > 0 || weekday30DaysExpense > 0) {
-          if (weekendAverage > weekdayAverage * 1.5) {
-            newSuggestions.push({
-              period: "WEEKEND HABITS",
-              text: `Your weekend spending (${formatNumber(
-                weekendAverage
-              )} ${currency}/day) is significantly higher than weekdays (${formatNumber(
-                weekdayAverage
-              )} ${currency}/day). Try planning free or low-cost weekend activities.`,
-              icon: "calendar",
-            });
-          } else if (weekdayAverage > weekendAverage * 1.5) {
-            newSuggestions.push({
-              period: "WEEKDAY HABITS",
-              text: `Your weekday spending (${formatNumber(
-                weekdayAverage
-              )} ${currency}/day) is much higher than weekends (${formatNumber(
-                weekendAverage
-              )} ${currency}/day). Look for ways to reduce daily work expenses like bringing lunch from home.`,
-              icon: "briefcase",
-            });
-          }
-        }
-
-        const topCategoryCurrentMonth = Object.entries(currentMonthExpenseByCategory).sort(([, a], [, b]) => b - a)[0];
-
-        if (topCategoryCurrentMonth && currentMonthExpense > 0) {
-          const [category, amount] = topCategoryCurrentMonth;
-          const percentage = Math.round((amount / currentMonthExpense) * 100);
-
-          if (percentage > 30) {
-            newSuggestions.push({
-              period: "TOP CATEGORY",
-              text: `${percentage}% of your spending (${formatNumber(amount)} ${currency}) is on ${category}. ${
-                ["Food", "Dining", "Restaurant", "Groceries"].some((c) => category.includes(c))
-                  ? "Consider meal planning to reduce food costs."
-                  : "Check if you can optimize this category."
-              }`,
-              icon: "pie-chart",
-            });
-          }
-        }
-
-        setSuggestions(newSuggestions);
 
         const displayData =
           selectedMonthView === "current"
@@ -216,6 +120,26 @@ export default function Index() {
 
     analyzeTransactions();
   }, [transactions, loading, selectedMonthView]);
+
+  // Fetch analysis recommendations from API
+  useEffect(() => {
+    if (loading || transactions.length === 0) return;
+
+    const loadAnalysis = async () => {
+      try {
+        setAnalysisLoading(true);
+        const analysisData = await fetchAnalysis();
+        setSuggestions(analysisData);
+      } catch (error: any) {
+        console.error("Failed to fetch analysis data", error.message);
+        setSuggestions([]);
+      } finally {
+        setAnalysisLoading(false);
+      }
+    };
+
+    loadAnalysis();
+  }, [transactions, loading]);
 
   useEffect(() => {
     refreshTransactions();
@@ -307,7 +231,6 @@ export default function Index() {
                         )}
                       </LinearGradient>
                     </View>
-
                     <View style={styles.sectionHeaderContainer}>
                       <Text style={styles.pageSection}>Insights</Text>
                       <TouchableOpacity style={styles.seeMoreButton} onPress={() => router.push("/transactions")}>
@@ -315,16 +238,11 @@ export default function Index() {
                         <Ionicons name="chevron-forward" size={16} color={colors.white} />
                       </TouchableOpacity>
                     </View>
-
                     <View style={styles.sectionContainer}>
                       <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
                       {chartData.length > 0 ? (
                         <View style={styles.chartWrapper}>
-                          <PieChart 
-                            data={chartData} 
-                            width={screenWidth - 60} 
-                            height={220} 
-                          />
+                          <PieChart data={chartData} width={screenWidth - 60} height={220} />
                           <View style={styles.customLegend}>
                             {chartData.map((item, index) => (
                               <View key={index} style={styles.legendItem}>
@@ -346,11 +264,15 @@ export default function Index() {
                       ) : (
                         <Text style={styles.noData}>No expense data available for this month</Text>
                       )}
-                    </View>
-
+                    </View>{" "}
                     <Text style={styles.pageSection}>Smart Recommendations</Text>
                     <View style={styles.sectionContainer}>
-                      {suggestions.length > 0 ? (
+                      {analysisLoading ? (
+                        <View style={styles.analysisLoadingContainer}>
+                          <ActivityIndicator size="small" color={colors.primary} />
+                          <Text style={styles.analysisLoadingText}>Generating insights...</Text>
+                        </View>
+                      ) : suggestions.length > 0 ? (
                         suggestions.map((suggestion, index) => (
                           <View key={index} style={styles.suggestionBox}>
                             <View style={styles.suggestionHeader}>
@@ -650,5 +572,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginLeft: 8,
+  },
+  analysisLoadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  analysisLoadingText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginLeft: 10,
   },
 });
