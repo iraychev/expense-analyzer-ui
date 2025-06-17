@@ -176,12 +176,8 @@ export default function BankConnections() {
                             <>
                               <View style={styles.bankDetails}>
                                 <View style={styles.bankDetailItem}>
-                                  <Text style={styles.bankDetailLabel}>Institution</Text>
+                                  <Text style={styles.bankDetailLabel}>Institution Id</Text>
                                   <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
-                                </View>
-                                <View style={styles.bankDetailItem}>
-                                  <Text style={styles.bankDetailLabel}>Requisition ID</Text>
-                                  <Text style={styles.bankDetailValue}>{connection.requisitionId}</Text>
                                 </View>
                               </View>
                               <View style={styles.accountDetails}>

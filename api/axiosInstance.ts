@@ -2,7 +2,6 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-// Create a global alert handler
 let globalAlertHandler: (title: string, message: string, buttons?: any[]) => void;
 
 export const setGlobalAlertHandler = (handler: (title: string, message: string, buttons?: any[]) => void) => {
