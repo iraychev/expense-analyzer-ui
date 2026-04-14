@@ -264,7 +264,7 @@ export default function Index() {
                       ) : (
                         <Text style={styles.noData}>No expense data available for this month</Text>
                       )}
-                    </View>{" "}
+                    </View>
                     <Text style={styles.pageSection}>Smart Recommendations</Text>
                     <View style={styles.sectionContainer}>
                       {analysisLoading ? (

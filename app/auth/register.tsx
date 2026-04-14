@@ -50,7 +50,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const response = await register(username, password, name);
+      const response = await register(username, password, name, email);
       showAlert("Registration Successful", "Your account has been created successfully!", [
         {
           text: "OK",

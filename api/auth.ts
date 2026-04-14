@@ -17,11 +17,12 @@ export const login = async (username: string, password: string) => {
   return response.data;
 };
 
-export const register = async (username: string, password: string, name: string) => {
+export const register = async (username: string, password: string, name: string, email: string) => {
   const response = await axiosInstance.post("/users", {
     username,
     password,
     name,
+    email,
   });
   await AsyncStorage.setItem("username", username);
   return response.data;
