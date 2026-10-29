@@ -5,7 +5,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type TransactionContextType = {
   transactions: Transaction[];
+  /** True only while loading with nothing to show yet. */
   isLoading: boolean;
+  /** True during any fetch, including background refreshes of existing data. */
+  isRefreshing: boolean;
   error: string | null;
   refreshTransactions: () => Promise<void>;
 };
@@ -15,10 +18,11 @@ const TransactionContext = createContext<TransactionContextType | undefined>(und
 export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshTransactions = useCallback(async () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
     setError(null);
 
     try {
@@ -35,6 +39,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.error("Error fetching transactions:", err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -56,6 +61,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       value={{
         transactions,
         isLoading,
+        isRefreshing,
         error,
         refreshTransactions,
       }}
