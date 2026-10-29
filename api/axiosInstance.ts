@@ -11,6 +11,10 @@ export const setGlobalAlertHandler = (handler: (title: string, message: string, 
 let isLoggingOut = false;
 
 const getApiBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
   if (__DEV__) {
     return "http://192.168.11.110:8080/api/v1";
   }
@@ -45,18 +49,17 @@ axiosInstance.interceptors.response.use(
         await AsyncStorage.removeItem("token");
         await AsyncStorage.removeItem("username");
 
+        const redirectToLogin = () => {
+          setTimeout(() => {
+            router.replace("/auth/login");
+            isLoggingOut = false;
+          }, 100);
+        };
+
         if (globalAlertHandler) {
-          globalAlertHandler("Session Expired", "Please log in again.", [
-            {
-              text: "OK",
-              onPress: () => {
-                setTimeout(() => {
-                  router.replace("/auth/login");
-                  isLoggingOut = false;
-                }, 100);
-              },
-            },
-          ]);
+          globalAlertHandler("Session Expired", "Please log in again.", [{ text: "OK", onPress: redirectToLogin }]);
+        } else {
+          redirectToLogin();
         }
       } catch (err) {
         isLoggingOut = false;
