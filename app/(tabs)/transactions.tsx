@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -19,10 +19,27 @@ import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
 
-const ITEM_HEIGHT = 100;
+const ALL_MONTHS = "all";
+
+const formatAmount = (amount: number): string =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
+
+type MonthOption = { key: string; label: string; year: number; month: number };
+
+const buildMonthOptions = (now: Date): MonthOption[] => {
+  const options: MonthOption[] = [];
+  for (let year = now.getFullYear() - 1; year <= now.getFullYear(); year++) {
+    for (let month = 0; month < 12; month++) {
+      if (year === now.getFullYear() && month > now.getMonth()) break;
+      const name = new Date(year, month).toLocaleString("default", { month: "long" });
+      options.push({ key: `${year}-${month}`, label: `${year} ${name}`, year, month });
+    }
+  }
+  return options;
+};
 
 export default function Transactions() {
-  const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
+  const { transactions, isLoading: loading, isRefreshing, refreshTransactions } = useTransactions();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedType, setSelectedType] = useState<"all" | "income" | "expense">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -31,68 +48,44 @@ export default function Transactions() {
   const [tempType, setTempType] = useState<"all" | "income" | "expense">(selectedType);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
-  const months: string[] = [];
-  for (let year = currentYear - 1; year <= currentYear; year++) {
-    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-      if (year === currentYear && monthIndex > currentMonth) break;
-      const monthName = new Date(year, monthIndex).toLocaleString("default", {
-        month: "long",
-      });
-      months.push(`${year} ${monthName}`);
-    }
-  }
-  const latestMonth = months.length > 0 ? months[months.length - 1] : "All";
-  months.push("All");
-
-  const [selectedMonth, setSelectedMonth] = useState<string>(latestMonth);
+  const monthOptions = useMemo(() => buildMonthOptions(new Date()), []);
+  const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[monthOptions.length - 1].key);
 
   const scrollViewRef = useRef<ScrollView>(null);
-  useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, []);
 
   const onRefresh = useCallback(() => {
     refreshTransactions();
   }, [refreshTransactions]);
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    const categoryMatch = selectedCategory === "" || transaction.category === selectedCategory;
-    let typeMatch = true;
-    if (selectedType === "income") {
-      typeMatch = transaction.amount > 0;
-    } else if (selectedType === "expense") {
-      typeMatch = transaction.amount < 0;
-    }
-    let monthMatch = true;
-    if (selectedMonth !== "All") {
-      const [year, ...monthParts] = selectedMonth.split(" ");
-      const monthName = monthParts.join(" ");
-      const transactionDate = new Date(transaction.valueDate);
-      const transactionMonth = transactionDate.toLocaleString("default", {
-        month: "long",
-      });
-      monthMatch = transactionDate.getFullYear() === parseInt(year) && transactionMonth === monthName;
-    }
+  const sortedTransactions = useMemo(() => {
+    const month = monthOptions.find((m) => m.key === selectedMonth);
+    const query = searchQuery.trim().toLowerCase();
+    const numericQuery = query !== "" && !isNaN(Number(query)) ? Math.abs(Number(query)) : null;
 
-    let searchMatch = true;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      searchMatch =
-        transaction.description.toLowerCase().includes(query) ||
-        transaction.category.toLowerCase().includes(query) ||
-        Math.abs(transaction.amount).toString().includes(query);
-    }
+    return transactions
+      .filter((transaction) => {
+        if (selectedCategory !== "" && transaction.category !== selectedCategory) return false;
+        if (selectedType === "income" && transaction.amount <= 0) return false;
+        if (selectedType === "expense" && transaction.amount >= 0) return false;
 
-    return categoryMatch && typeMatch && monthMatch && searchMatch;
-  });
+        if (month) {
+          const date = new Date(transaction.valueDate);
+          if (date.getFullYear() !== month.year || date.getMonth() !== month.month) return false;
+        }
 
-  const sortedTransactions = [...filteredTransactions].sort(
-    (a, b) => new Date(b.valueDate).getTime() - new Date(a.valueDate).getTime()
-  );
+        if (query) {
+          return (
+            transaction.description.toLowerCase().includes(query) ||
+            transaction.category.toLowerCase().includes(query) ||
+            (numericQuery !== null && Math.abs(transaction.amount) === numericQuery)
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.valueDate).getTime() - new Date(a.valueDate).getTime());
+  }, [transactions, selectedCategory, selectedType, selectedMonth, searchQuery, monthOptions]);
+
+  const hasActiveFilters = selectedCategory !== "" || selectedType !== "all";
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
   const getCategoryIcon = (category: string) => {
@@ -143,10 +136,12 @@ export default function Transactions() {
       </View>
       <View style={styles.transactionDetails}>
         <View style={styles.transactionHeader}>
-          <Text style={styles.category}>{item.category}</Text>
+          <Text style={styles.category} numberOfLines={1}>
+            {item.category}
+          </Text>
           <Text style={[styles.amount, { color: item.amount < 0 ? colors.expense : colors.income }]}>
             {item.amount < 0 ? "- " : "+ "}
-            {Math.abs(item.amount)} {item.currency}
+            {formatAmount(item.amount)} {item.currency}
           </Text>
         </View>
         <Text style={styles.description} numberOfLines={2}>
@@ -156,12 +151,6 @@ export default function Transactions() {
       </View>
     </View>
   );
-
-  const getItemLayout = (data: any, index: number) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * index,
-    index,
-  });
 
   return (
     <>
@@ -179,8 +168,14 @@ export default function Transactions() {
                 <Text style={styles.title}>Transactions</Text>
                 <Text style={styles.subtitle}>Track your financial activity</Text>
               </View>
-              <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
+              <TouchableOpacity
+                onPress={openFilterModal}
+                style={styles.filterButton}
+                accessibilityRole="button"
+                accessibilityLabel={hasActiveFilters ? "Filters (active)" : "Filters"}
+              >
                 <FontAwesome name="filter" size={18} color={colors.white} />
+                {hasActiveFilters && <View style={styles.filterBadge} />}
               </TouchableOpacity>
             </View>
 
@@ -195,29 +190,50 @@ export default function Transactions() {
                 onChangeText={setSearchQuery}
               />
               {searchQuery ? (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <TouchableOpacity
+                  onPress={() => setSearchQuery("")}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                >
                   <Ionicons name="close-circle" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               ) : null}
             </View>
 
             <View style={styles.monthPickerContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
-                {months.map((month) => (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                ref={scrollViewRef}
+                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+              >
+                {[{ key: ALL_MONTHS, label: "All" }, ...monthOptions].map((month) => (
                   <TouchableOpacity
-                    key={month}
-                    onPress={() => setSelectedMonth(month)}
-                    style={[styles.monthOption, selectedMonth === month && styles.selectedMonth]}
+                    key={month.key}
+                    onPress={() => setSelectedMonth(month.key)}
+                    style={[styles.monthOption, selectedMonth === month.key && styles.selectedMonth]}
                   >
-                    <Text style={[styles.monthText, selectedMonth === month && styles.selectedMonthText]}>{month}</Text>
+                    <Text style={[styles.monthText, selectedMonth === month.key && styles.selectedMonthText]}>
+                      {month.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
-            <Modal visible={filterModalVisible} animationType="slide" transparent={true}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
+            <Modal
+              visible={filterModalVisible}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={() => setFilterModalVisible(false)}
+            >
+              <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setFilterModalVisible(false)}
+              >
+                <TouchableOpacity activeOpacity={1} style={styles.modalContainer}>
                   <Text style={styles.modalTitle}>Filter Transactions</Text>
                   <Text style={styles.filterLabel}>Category</Text>
                   <Picker
@@ -257,8 +273,8 @@ export default function Transactions() {
                       <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
-              </View>
+                </TouchableOpacity>
+              </TouchableOpacity>
             </Modal>
 
             {loading ? (
@@ -269,13 +285,12 @@ export default function Transactions() {
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContainer}
                 renderItem={renderTransaction}
-                refreshing={loading}
+                refreshing={isRefreshing}
                 onRefresh={onRefresh}
                 removeClippedSubviews={true}
                 maxToRenderPerBatch={10}
                 initialNumToRender={10}
                 windowSize={10}
-                getItemLayout={getItemLayout}
                 ListEmptyComponent={() => (
                   <View style={styles.noTransactions}>
                     <View style={styles.emptyIconContainer}>
@@ -339,6 +354,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.white + "30",
+  },
+  filterBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.warning,
   },
   searchContainer: {
     flexDirection: "row",
@@ -494,7 +518,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
-    height: ITEM_HEIGHT,
+    minHeight: 100,
   },
   iconContainer: {
     width: 54,
@@ -514,11 +538,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   category: {
+    flexShrink: 1,
+    marginRight: 8,
     fontSize: 16,
     fontWeight: "600",
     color: colors.text,
   },
   amount: {
+    flexShrink: 0,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -573,34 +600,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-});
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    height: 50,
-    fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    color: colors.text,
-    paddingRight: 30,
-    backgroundColor: colors.white,
-    marginBottom: 20,
-  },
-  inputAndroid: {
-    height: 50,
-    fontSize: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    color: colors.text,
-    paddingRight: 30,
-    backgroundColor: colors.white,
-    marginBottom: 20,
   },
 });
