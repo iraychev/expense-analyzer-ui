@@ -16,7 +16,7 @@ const getApiBaseUrl = () => {
   }
 
   if (__DEV__) {
-    return "http://192.168.11.110:8080/api/v1";
+    return "http://192.168.11.91:8080/api/v1";
   }
 
   return "https://expense-analyzer-production.up.railway.app/api/v1";
