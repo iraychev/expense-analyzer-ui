@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, SafeAreaView, TouchableOpacity, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
@@ -10,7 +10,7 @@ import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
 import AddBankConnectionModal from "@/app/modals/AddBankConnectionModal";
-import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
 
@@ -22,48 +22,44 @@ export default function BankConnections() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [finalizing, setFinalizing] = useState<boolean>(false);
-  const router = useRouter();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { refreshTransactions } = useTransactions();
   const { showAlert } = useAlert();
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadUser = async () => {
-      const username = await AsyncStorage.getItem("username");
-      if (!username) {
-        showAlert("Error", "Username not found in local storage");
-        return;
-      }
-      try {
-        const fetchedUser = await fetchUser(username);
-        if (isMounted) {
-          setUser(fetchedUser);
+  // Reload on every focus: tab screens stay mounted, so a mount-only load goes stale.
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const loadUser = async () => {
+        try {
+          const username = await AsyncStorage.getItem("username");
+          if (!username) {
+            showAlert("Error", "Username not found in local storage");
+            return;
+          }
+          const fetchedUser = await fetchUser(username);
+          if (isActive) setUser(fetchedUser);
+        } catch (error: any) {
+          if (isActive) showAlert("Failed to fetch user data", error.message);
+        } finally {
+          if (isActive) setLoading(false);
         }
-      } catch (error: any) {
-        if (isMounted) {
-          showAlert("Failed to fetch user data", error.message);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    loadUser();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      };
+      loadUser();
+      return () => {
+        isActive = false;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
-  useEffect(() => {
-    const checkPending = async () => {
-      const pending = await AsyncStorage.getItem("pendingRequisitionId");
-      if (pending) {
-        setPendingRequisitionId(pending);
-      }
-    };
-    checkPending();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem("pendingRequisitionId").then((pending) => {
+        if (pending) setPendingRequisitionId(pending);
+      });
+    }, [])
+  );
 
   const handleUpdateBankConnections = async () => {
     const username = await AsyncStorage.getItem("username");
@@ -95,21 +91,57 @@ export default function BankConnections() {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
+          setDeletingId(connectionId);
           try {
             await deleteBankConnection(connectionId);
-            // Refresh connections after deletion
             const username = await AsyncStorage.getItem("username");
             if (username) {
-              const updatedUser = await updateBankConnections(username);
-              setUser(updatedUser);
+              setUser(await fetchUser(username));
             }
+            // Transactions of the removed connection should disappear from other screens too.
+            await refreshTransactions();
             showAlert("Success", "Bank connection deleted successfully.");
           } catch (error: any) {
             showAlert("Error", error.message);
+          } finally {
+            setDeletingId(null);
           }
         },
       },
     ]);
+  };
+
+  const handleFinalizeLinking = async () => {
+    if (!pendingRequisitionId) return;
+    const username = await AsyncStorage.getItem("username");
+    if (!username) {
+      showAlert("Error", "Username not found in local storage");
+      return;
+    }
+
+    setFinalizing(true);
+    try {
+      await linkBankConnection(username, pendingRequisitionId);
+      await AsyncStorage.removeItem("pendingRequisitionId");
+      setPendingRequisitionId(null);
+    } catch (error: any) {
+      showAlert("Linking Failed", error.message);
+      setFinalizing(false);
+      return;
+    }
+
+    // Linking succeeded; a failed sync must not look like a failed link.
+    try {
+      setSyncing(true);
+      setUser(await updateBankConnections(username));
+      await refreshTransactions();
+      showAlert("Success", "Bank connection linked and transactions updated.");
+    } catch (error: any) {
+      showAlert("Linked, but sync failed", `${error.message}\n\nUse "Sync Transactions & Accounts" to retry.`);
+    } finally {
+      setFinalizing(false);
+      setSyncing(false);
+    }
   };
 
   const toggleExpand = (connectionId: number) => {
@@ -157,7 +189,6 @@ export default function BankConnections() {
                     <View style={styles.sectionContainer}>
                       {user.bankConnections.map((connection: BankConnection) => (
                         <View key={connection.id} style={styles.bankConnection}>
-                          {/* Bank connection content remains the same */}
                           <TouchableOpacity
                             onPress={() => toggleExpand(connection.id)}
                             style={styles.bankConnectionHeader}
@@ -176,7 +207,7 @@ export default function BankConnections() {
                             <>
                               <View style={styles.bankDetails}>
                                 <View style={styles.bankDetailItem}>
-                                  <Text style={styles.bankDetailLabel}>Institution Id</Text>
+                                  <Text style={styles.bankDetailLabel}>Institution</Text>
                                   <Text style={styles.bankDetailValue}>{connection.institutionName}</Text>
                                 </View>
                               </View>
@@ -195,11 +226,18 @@ export default function BankConnections() {
                                 ))}
                               </View>
                               <TouchableOpacity
-                                style={styles.deleteButton}
+                                style={[styles.deleteButton, deletingId === connection.requisitionId && styles.disabledButton]}
+                                disabled={deletingId !== null}
                                 onPress={() => handleDeleteConnection(connection.requisitionId)}
                               >
-                                <Ionicons name="trash-outline" size={18} color={colors.white} />
-                                <Text style={styles.deleteButtonText}>Delete Connection</Text>
+                                {deletingId === connection.requisitionId ? (
+                                  <ActivityIndicator size="small" color={colors.white} />
+                                ) : (
+                                  <Ionicons name="trash-outline" size={18} color={colors.white} />
+                                )}
+                                <Text style={styles.deleteButtonText}>
+                                  {deletingId === connection.requisitionId ? "Deleting..." : "Delete Connection"}
+                                </Text>
                               </TouchableOpacity>
                             </>
                           )}
@@ -238,36 +276,11 @@ export default function BankConnections() {
                 {/* Pending Connection Button - Only shown when needed */}
                 {pendingRequisitionId && (
                   <View style={styles.sectionContainer}>
-                    <Text style={styles.pageSection}>Pending Connection</Text>
+                    <Text style={styles.pendingTitle}>Pending Connection</Text>
                     <TouchableOpacity
                       style={[styles.actionButton, styles.finalizeButton, finalizing && styles.disabledButton]}
                       disabled={finalizing}
-                      onPress={async () => {
-                        const username = await AsyncStorage.getItem("username");
-                        if (!username) {
-                          showAlert("Error", "Username not found in local storage");
-                          return;
-                        }
-
-                        setFinalizing(true);
-                        try {
-                          await linkBankConnection(username, pendingRequisitionId);
-                          showAlert("Success", "Bank connection linked successfully.");
-                          await AsyncStorage.removeItem("pendingRequisitionId");
-                          setPendingRequisitionId(null);
-
-                          setSyncing(true);
-                          const updatedUser = await updateBankConnections(username);
-                          setUser(updatedUser);
-                          await refreshTransactions();
-                          showAlert("Success", "Bank connection and transactions updated successfully");
-                        } catch (error: any) {
-                          showAlert("Error", error.message);
-                        } finally {
-                          setFinalizing(false);
-                          setSyncing(false);
-                        }
-                      }}
+                      onPress={handleFinalizeLinking}
                     >
                       {finalizing ? (
                         <ActivityIndicator size="small" color={colors.white} />
@@ -482,6 +495,12 @@ const styles = StyleSheet.create({
   },
   finalizeButton: {
     backgroundColor: colors.success,
+  },
+  pendingTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: 10,
   },
   loader: {
     marginTop: 40,
