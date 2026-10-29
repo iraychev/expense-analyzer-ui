@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from "react";
 import { Transaction } from "@/interface/Transaction";
-import { fetchTransactions } from "@/api/transactionService";
+import { fetchTransactions, updateTransactionCategory } from "@/api/transactionService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type TransactionContextType = {
@@ -12,6 +12,8 @@ type TransactionContextType = {
   error: string | null;
   /** silent = background poll: no refreshing flag and no error state. */
   refreshTransactions: (options?: { silent?: boolean }) => Promise<void>;
+  /** Optimistically sets a category; rolls back and rethrows if the server rejects it. */
+  recategorizeTransaction: (id: number, category: string, applyToMerchant: boolean) => Promise<void>;
 };
 
 const POLL_INTERVAL_MS = 5000;
@@ -49,6 +51,38 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!silent) setIsRefreshing(false);
     }
   }, []);
+
+  const recategorizeTransaction = useCallback(
+    async (id: number, category: string, applyToMerchant: boolean) => {
+      let previous: Transaction | undefined;
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
+          previous = t;
+          return { ...t, category, categoryStatus: "CATEGORIZED", categorySource: "USER" };
+        })
+      );
+
+      try {
+        const updated = await updateTransactionCategory(id, category, applyToMerchant);
+        if (updated && typeof updated.id === "number") {
+          setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
+        }
+      } catch (err) {
+        // Roll back only this transaction so concurrent refreshes are not clobbered.
+        if (previous) {
+          const original = previous;
+          setTransactions((prev) => prev.map((t) => (t.id === id ? original : t)));
+        }
+        throw err;
+      }
+
+      if (applyToMerchant) {
+        await refreshTransactions({ silent: true });
+      }
+    },
+    [refreshTransactions]
+  );
 
   // While categorization is running on the server, quietly poll until nothing is pending.
   const hasPending = transactions.some((t) => t.categoryStatus === "PENDING");
@@ -100,6 +134,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isRefreshing,
         error,
         refreshTransactions,
+        recategorizeTransaction,
       }}
     >
       {children}

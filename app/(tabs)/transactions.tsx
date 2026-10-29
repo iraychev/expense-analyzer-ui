@@ -20,6 +20,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
 import { useCategories } from "@/hooks/useCategories";
 import { getCategoryIcon } from "@/api/categoryService";
+import CategoryPickerModal from "@/app/modals/CategoryPickerModal";
+import { Transaction } from "@/interface/Transaction";
 
 const ALL_MONTHS = "all";
 
@@ -54,6 +56,7 @@ export default function Transactions() {
   const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[monthOptions.length - 1].key);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const onRefresh = useCallback(() => {
     refreshTransactions();
@@ -123,7 +126,13 @@ export default function Transactions() {
     const isUncategorized = item.categoryStatus === "FAILED" || item.categoryStatus === "UNCATEGORIZABLE";
     const categoryLabel = isUncategorized ? "Uncategorized" : item.category;
     return (
-    <View style={styles.transaction}>
+    <TouchableOpacity
+      style={styles.transaction}
+      activeOpacity={0.7}
+      onPress={() => setEditingTransaction(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Change category of ${item.description}`}
+    >
       <View style={[styles.iconContainer, { backgroundColor: colors.primary + "10" }]}>
         <FontAwesome
           name={isPending ? "clock-o" : isUncategorized ? "question-circle" : getCategoryIcon(item.category)}
@@ -153,7 +162,7 @@ export default function Transactions() {
         </Text>
         <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
     );
   };
 
@@ -314,6 +323,8 @@ export default function Transactions() {
           </View>
         </SafeAreaView>
       </LinearGradient>
+
+      <CategoryPickerModal transaction={editingTransaction} onClose={() => setEditingTransaction(null)} />
     </>
   );
 }
