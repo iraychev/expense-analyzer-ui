@@ -19,6 +19,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { fetchAnalysis, AnalysisItem } from "@/api/analysisService";
+import { useCategories } from "@/hooks/useCategories";
+import { getCategoryKind } from "@/api/categoryService";
 
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -36,6 +38,11 @@ export default function Index() {
   const { width: windowWidth } = useWindowDimensions();
   const chartWidth = Math.min(windowWidth - 80, 320);
   const router = useRouter();
+  const categories = useCategories();
+  const pendingCount = useMemo(
+    () => transactions.filter((tx) => tx.categoryStatus === "PENDING").length,
+    [transactions]
+  );
 
   useEffect(() => {
     const now = new Date();
@@ -60,6 +67,9 @@ export default function Index() {
 
     transactions.forEach((tx) => {
       if (tx.amount >= 0) return;
+      // Not spending: still being categorized, or income/transfer categories.
+      if (tx.categoryStatus === "PENDING") return;
+      if (getCategoryKind(categories, tx.category) !== "EXPENSE") return;
       const absAmount = Math.abs(tx.amount);
       const txDate = new Date(tx.valueDate);
 
@@ -92,7 +102,7 @@ export default function Index() {
         lastMonthExpense > 0 ? ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100 : 0,
       chartData: chartArray,
     };
-  }, [transactions, selectedMonthView]);
+  }, [transactions, selectedMonthView, categories]);
 
   // Re-fetch recommendations when the set of transactions changes, not on every refresh.
   const transactionCount = transactions.length;
@@ -219,6 +229,11 @@ export default function Index() {
                     </View>
                     <View style={styles.sectionContainer}>
                       <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
+                      {pendingCount > 0 && (
+                        <Text style={styles.pendingNote}>
+                          {pendingCount} transaction{pendingCount === 1 ? "" : "s"} still being categorized
+                        </Text>
+                      )}
                       {chartData.length > 0 ? (
                         <View style={styles.chartWrapper}>
                           <PieChart data={chartData} width={chartWidth} height={220} />
@@ -309,6 +324,12 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? 25 : 0,
   },
   container: { flexGrow: 1, padding: 20 },
+  pendingNote: {
+    fontSize: 13,
+    fontStyle: "italic",
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
   greeting: {
     fontSize: 24,
     fontWeight: "600",

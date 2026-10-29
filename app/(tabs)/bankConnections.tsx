@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, SafeAreaView, TouchableOpacity, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
@@ -15,6 +15,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
 import { getErrorMessage } from "@/api/errors";
 
+const formatClock = (date: Date): string =>
+  date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const formatTimeAgo = (date: Date, now: number): string => {
+  const minutes = Math.floor((now - date.getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+};
+
 export default function BankConnections() {
   const [user, setUser] = useState<User | null>(null);
   const [expandedConnections, setExpandedConnections] = useState<number[]>([]);
@@ -25,6 +38,8 @@ export default function BankConnections() {
   const [finalizeStep, setFinalizeStep] = useState<"linking" | "importing">("linking");
   const [finalizing, setFinalizing] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [nextSyncAvailableAt, setNextSyncAvailableAt] = useState<Date | null>(null);
+  const [now, setNow] = useState<number>(Date.now());
   const { refreshTransactions } = useTransactions();
   const { showAlert } = useAlert();
 
@@ -63,6 +78,21 @@ export default function BankConnections() {
     }, [])
   );
 
+  // Tick every 30s so "synced X ago" and the sync lock expire without user action.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const syncLockedUntil = nextSyncAvailableAt && nextSyncAvailableAt.getTime() > now ? nextSyncAvailableAt : null;
+
+  const lastSyncedAt = (): Date | null => {
+    const times = (user?.bankConnections ?? [])
+      .map((c) => (c.syncedAt ? new Date(c.syncedAt).getTime() : NaN))
+      .filter((t) => !isNaN(t));
+    return times.length > 0 ? new Date(Math.max(...times)) : null;
+  };
+
   const handleUpdateBankConnections = async () => {
     const username = await AsyncStorage.getItem("username");
     if (!username) {
@@ -74,10 +104,33 @@ export default function BankConnections() {
     try {
       const updatedUser = await updateBankConnections(username);
       setUser(updatedUser);
+      setNow(Date.now());
       await refreshTransactions();
-      showAlert("Success", "Bank connections and transactions updated successfully");
+      if (updatedUser.throttled) {
+        const next = updatedUser.nextSyncAvailableAt ? new Date(updatedUser.nextSyncAvailableAt) : null;
+        const validNext = next && !isNaN(next.getTime()) ? next : null;
+        setNextSyncAvailableAt(validNext);
+        showAlert(
+          "Already up to date",
+          validNext ? `Already up to date. Next sync available at ${formatClock(validNext)}.` : "Already up to date. Please try again later."
+        );
+      } else {
+        setNextSyncAvailableAt(null);
+        showAlert("Success", "Bank connections and transactions updated successfully");
+      }
     } catch (error: any) {
-      showAlert("Sync Failed", getErrorMessage(error));
+      if (error?.response?.status === 429) {
+        const retryAfter = Number(error.response.headers?.["retry-after"]);
+        if (retryAfter > 0) setNextSyncAvailableAt(new Date(Date.now() + retryAfter * 1000));
+        showAlert(
+          "Sync limit reached",
+          `${getErrorMessage(error, "Your bank only allows a few syncs per day.")}
+
+Your data is as of the last sync; try again later.`
+        );
+      } else {
+        showAlert("Sync Failed", getErrorMessage(error));
+      }
     } finally {
       setSyncing(false);
     }
@@ -250,9 +303,9 @@ export default function BankConnections() {
 
                       {/* Sync Button - Only shown when connections exist */}
                       <TouchableOpacity
-                        style={[styles.syncButton, syncing && styles.disabledButton]}
+                        style={[styles.syncButton, (syncing || !!syncLockedUntil) && styles.disabledButton]}
                         onPress={handleUpdateBankConnections}
-                        disabled={syncing}
+                        disabled={syncing || !!syncLockedUntil}
                       >
                         {syncing ? (
                           <ActivityIndicator size="small" color={colors.white} />
@@ -263,6 +316,14 @@ export default function BankConnections() {
                           {syncing ? "Syncing Transactions..." : "Sync Transactions & Accounts"}
                         </Text>
                       </TouchableOpacity>
+                      {syncLockedUntil && (
+                        <Text style={styles.syncHint}>
+                          Already up to date. Next sync available at {formatClock(syncLockedUntil)}.
+                        </Text>
+                      )}
+                      {lastSyncedAt() && (
+                        <Text style={styles.syncHint}>Last synced {formatTimeAgo(lastSyncedAt() as Date, now)}</Text>
+                      )}
                     </View>
                   </>
                 ) : (
@@ -472,6 +533,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  syncHint: {
+    marginTop: 10,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: "center",
   },
   disabledButton: {
     opacity: 0.7,

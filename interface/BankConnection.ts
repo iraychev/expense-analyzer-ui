@@ -14,4 +14,6 @@ export interface BankConnection {
     account_id?: string;
   }[];
   userId: number;
+  /** ISO timestamp of the last successful sync (absent on older API versions). */
+  syncedAt?: string | null;
 }

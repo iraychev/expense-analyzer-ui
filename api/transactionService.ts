@@ -9,3 +9,12 @@ export const fetchTransactions = async (username: string): Promise<Transaction[]
   );
   return transactions;
 };
+
+export const updateTransactionCategory = async (
+  id: number,
+  category: string,
+  applyToMerchant: boolean
+): Promise<Transaction> => {
+  const response = await axiosInstance.put(`/transactions/${id}/category`, { category, applyToMerchant });
+  return response.data;
+};
