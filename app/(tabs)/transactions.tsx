@@ -18,6 +18,8 @@ import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
+import { useCategories } from "@/hooks/useCategories";
+import { getCategoryIcon } from "@/api/categoryService";
 
 const ALL_MONTHS = "all";
 
@@ -87,28 +89,15 @@ export default function Transactions() {
 
   const hasActiveFilters = selectedCategory !== "" || selectedType !== "all";
 
-  const categories = Array.from(new Set(transactions.map((t) => t.category)));
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Supermarkets":
-        return "shopping-cart";
-      case "Financial Services":
-        return "bank";
-      case "Shopping":
-        return "shopping-bag";
-      case "Restaurants and bars":
-        return "cutlery";
-      case "Entertainment and Sport":
-        return "futbol-o";
-      case "Traveling and Vacation":
-        return "plane";
-      case "Health and Beauty":
-        return "heartbeat";
-      default:
-        return "question-circle";
-    }
-  };
-
+  const categoryList = useCategories();
+  // Known categories plus any legacy ones already present on transactions.
+  const categories = useMemo(() => {
+    const names = categoryList.map((c) => c.label);
+    transactions.forEach((t) => {
+      if (t.category && !names.includes(t.category)) names.push(t.category);
+    });
+    return names;
+  }, [categoryList, transactions]);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, "0");
@@ -129,16 +118,31 @@ export default function Transactions() {
     setFilterModalVisible(false);
   };
 
-  const renderTransaction = ({ item }: { item: any }) => (
+  const renderTransaction = ({ item }: { item: any }) => {
+    const isPending = item.categoryStatus === "PENDING";
+    const isUncategorized = item.categoryStatus === "FAILED" || item.categoryStatus === "UNCATEGORIZABLE";
+    const categoryLabel = isUncategorized ? "Uncategorized" : item.category;
+    return (
     <View style={styles.transaction}>
       <View style={[styles.iconContainer, { backgroundColor: colors.primary + "10" }]}>
-        <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
+        <FontAwesome
+          name={isPending ? "clock-o" : isUncategorized ? "question-circle" : getCategoryIcon(item.category)}
+          size={24}
+          color={colors.primary}
+        />
       </View>
       <View style={styles.transactionDetails}>
         <View style={styles.transactionHeader}>
-          <Text style={styles.category} numberOfLines={1}>
-            {item.category}
-          </Text>
+          {isPending ? (
+            <View style={styles.pendingChip}>
+              <ActivityIndicator size="small" color={colors.primary} style={styles.pendingSpinner} />
+              <Text style={styles.pendingChipText}>Categorizing...</Text>
+            </View>
+          ) : (
+            <Text style={[styles.category, isUncategorized && styles.uncategorized]} numberOfLines={1}>
+              {categoryLabel}
+            </Text>
+          )}
           <Text style={[styles.amount, { color: item.amount < 0 ? colors.expense : colors.income }]}>
             {item.amount < 0 ? "- " : "+ "}
             {formatAmount(item.amount)} {item.currency}
@@ -150,7 +154,8 @@ export default function Transactions() {
         <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
       </View>
     </View>
-  );
+    );
+  };
 
   return (
     <>
@@ -500,6 +505,28 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: colors.text,
+  },
+  pendingChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.primary + "15",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  pendingSpinner: {
+    transform: [{ scale: 0.7 }],
+    marginRight: 4,
+  },
+  pendingChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  uncategorized: {
+    fontStyle: "italic",
+    color: colors.textSecondary,
   },
   listContainer: {
     paddingBottom: 30,
