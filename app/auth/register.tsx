@@ -18,6 +18,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import TermsAndConditionsModal from "../modals/TermsAndConditionsModal";
 import { useAlert } from "@/context/AlertContext";
+import { getApiError } from "@/api/errors";
+
+type FieldName = "name" | "username" | "email" | "password" | "confirmPassword";
+const FIELD_NAMES: FieldName[] = ["name", "username", "email", "password", "confirmPassword"];
+const USERNAME_REGEX = /^(?=[a-zA-Z0-9._]{4,20}$)(?!.*[_.]{2})[^_.].*[^_.]$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -32,33 +38,51 @@ export default function Register() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { showAlert } = useAlert();
 
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
+
+  const clearError = (field: FieldName) => {
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const hasMinLength = password.length >= 8;
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+
+  const validate = (): Partial<Record<FieldName, string>> => {
+    const result: Partial<Record<FieldName, string>> = {};
+    if (!name.trim()) result.name = "Full name is required";
+    if (!USERNAME_REGEX.test(username.trim())) {
+      result.username = "4-20 characters: letters, digits, '.' or '_' (not at the start or end)";
+    }
+    if (!EMAIL_REGEX.test(email.trim())) result.email = "Please enter a valid email address";
+    if (!(hasMinLength && hasLetter && hasDigit)) {
+      result.password = "Password must be at least 8 characters with a letter and a digit";
+    }
+    if (password !== confirmPassword) result.confirmPassword = "Passwords do not match";
+    return result;
+  };
+
   const handleRegister = async () => {
-    if (!name || !username || !password || !confirmPassword) {
-      showAlert("Validation Error", "Please fill in all required fields");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      showAlert("Validation Error", "Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      showAlert("Validation Error", "Password must be at least 6 characters long");
-      return;
-    }
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
     try {
-      const response = await register(username, password, name, email);
-      showAlert("Registration Successful", "Your account has been created successfully!", [
+      await register(username.trim(), password, name.trim(), email.trim());
+      showAlert("Registration Successful", "Your account has been created. You can sign in now.", [
         {
           text: "OK",
           onPress: () => router.push("/auth/login"),
         },
       ]);
     } catch (error: any) {
-      showAlert("Registration Failed", error.message);
+      const { message, field } = getApiError(error, "Could not create your account. Please try again.");
+      if (field && FIELD_NAMES.includes(field as FieldName)) {
+        setErrors({ [field]: message });
+      } else {
+        showAlert("Registration Failed", message);
+      }
     } finally {
       setLoading(false);
     }
@@ -88,48 +112,63 @@ export default function Register() {
             </View>
 
             <View style={styles.formContainer}>
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errors.name ? styles.inputWrapperError : null]}>
                 <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={(text) => {
+                    setName(text);
+                    clearError("name");
+                  }}
                   placeholder="Full Name *"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              {errors.name ? <Text style={styles.fieldError}>{errors.name}</Text> : null}
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errors.username ? styles.inputWrapperError : null]}>
                 <Ionicons name="at-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={(text) => {
+                    setUsername(text);
+                    clearError("username");
+                  }}
                   autoCapitalize="none"
                   placeholder="Username *"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              {errors.username ? <Text style={styles.fieldError}>{errors.username}</Text> : null}
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errors.email ? styles.inputWrapperError : null]}>
                 <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    clearError("email");
+                  }}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   placeholder="Email *"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errors.password ? styles.inputWrapperError : null]}>
                 <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    clearError("password");
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   placeholder="Password *"
@@ -143,13 +182,17 @@ export default function Register() {
                   />
                 </TouchableOpacity>
               </View>
+              {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputWrapperError : null]}>
                 <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    clearError("confirmPassword");
+                  }}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                   placeholder="Confirm Password *"
@@ -163,19 +206,24 @@ export default function Register() {
                   />
                 </TouchableOpacity>
               </View>
+              {errors.confirmPassword ? <Text style={styles.fieldError}>{errors.confirmPassword}</Text> : null}
 
               <View style={styles.passwordRequirements}>
                 <Text style={styles.requirementsTitle}>Password must:</Text>
-                <View style={styles.requirementItem}>
-                  <Ionicons
-                    name={password.length >= 6 ? "checkmark-circle" : "close-circle"}
-                    size={16}
-                    color={password.length >= 6 ? colors.success : colors.textMuted}
-                  />
-                  <Text style={[styles.requirementText, password.length >= 6 && styles.requirementMet]}>
-                    Be at least 6 characters long
-                  </Text>
-                </View>
+                {[
+                  { met: hasMinLength, text: "Be at least 8 characters long" },
+                  { met: hasLetter, text: "Contain a letter" },
+                  { met: hasDigit, text: "Contain a digit" },
+                ].map((rule) => (
+                  <View key={rule.text} style={styles.requirementItem}>
+                    <Ionicons
+                      name={rule.met ? "checkmark-circle" : "close-circle"}
+                      size={16}
+                      color={rule.met ? colors.success : colors.textMuted}
+                    />
+                    <Text style={[styles.requirementText, rule.met && styles.requirementMet]}>{rule.text}</Text>
+                  </View>
+                ))}
               </View>
 
               <TouchableOpacity
@@ -277,6 +325,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 16,
     backgroundColor: colors.background,
+  },
+  inputWrapperError: {
+    borderColor: colors.danger,
+    marginBottom: 4,
+  },
+  fieldError: {
+    color: colors.danger,
+    fontSize: 13,
+    marginBottom: 14,
+    marginLeft: 4,
   },
   inputIcon: {
     marginRight: 10,

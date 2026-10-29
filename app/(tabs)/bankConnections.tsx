@@ -13,6 +13,7 @@ import AddBankConnectionModal from "@/app/modals/AddBankConnectionModal";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
+import { getErrorMessage } from "@/api/errors";
 
 export default function BankConnections() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,6 +22,7 @@ export default function BankConnections() {
   const [pendingRequisitionId, setPendingRequisitionId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [finalizeStep, setFinalizeStep] = useState<"linking" | "importing">("linking");
   const [finalizing, setFinalizing] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { refreshTransactions } = useTransactions();
@@ -40,7 +42,7 @@ export default function BankConnections() {
           const fetchedUser = await fetchUser(username);
           if (isActive) setUser(fetchedUser);
         } catch (error: any) {
-          if (isActive) showAlert("Failed to fetch user data", error.message);
+          if (isActive) showAlert("Could not load your connections", getErrorMessage(error));
         } finally {
           if (isActive) setLoading(false);
         }
@@ -75,7 +77,7 @@ export default function BankConnections() {
       await refreshTransactions();
       showAlert("Success", "Bank connections and transactions updated successfully");
     } catch (error: any) {
-      showAlert("Update Failed", error.message);
+      showAlert("Sync Failed", getErrorMessage(error));
     } finally {
       setSyncing(false);
     }
@@ -102,7 +104,7 @@ export default function BankConnections() {
             await refreshTransactions();
             showAlert("Success", "Bank connection deleted successfully.");
           } catch (error: any) {
-            showAlert("Error", error.message);
+            showAlert("Something went wrong", getErrorMessage(error));
           } finally {
             setDeletingId(null);
           }
@@ -119,25 +121,27 @@ export default function BankConnections() {
       return;
     }
 
+    setFinalizeStep("linking");
     setFinalizing(true);
     try {
       await linkBankConnection(username, pendingRequisitionId);
       await AsyncStorage.removeItem("pendingRequisitionId");
       setPendingRequisitionId(null);
     } catch (error: any) {
-      showAlert("Linking Failed", error.message);
+      showAlert("Linking Failed", getErrorMessage(error));
       setFinalizing(false);
       return;
     }
 
     // Linking succeeded; a failed sync must not look like a failed link.
     try {
+      setFinalizeStep("importing");
       setSyncing(true);
       setUser(await updateBankConnections(username));
       await refreshTransactions();
       showAlert("Success", "Bank connection linked and transactions updated.");
     } catch (error: any) {
-      showAlert("Linked, but sync failed", `${error.message}\n\nUse "Sync Transactions & Accounts" to retry.`);
+      showAlert("Linked, but sync failed", `${getErrorMessage(error)}\n\nUse "Sync Transactions & Accounts" to retry.`);
     } finally {
       setFinalizing(false);
       setSyncing(false);
@@ -288,7 +292,7 @@ export default function BankConnections() {
                         <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
                       )}
                       <Text style={styles.actionButtonText}>
-                        {finalizing ? "Finalizing..." : "Finalize Linking"}
+                        {finalizing ? (finalizeStep === "linking" ? "Linking bank..." : "Importing transactions...") : "Finalize Linking"}
                       </Text>
                     </TouchableOpacity>
                   </View>

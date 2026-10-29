@@ -24,6 +24,5 @@ export const register = async (username: string, password: string, name: string,
     name,
     email,
   });
-  await AsyncStorage.setItem("username", username);
   return response.data;
 };

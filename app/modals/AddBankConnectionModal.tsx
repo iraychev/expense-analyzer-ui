@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
+import { getErrorMessage } from "@/api/errors";
 
 const institutions = [
   { id: "DSKBANK_STSABGSFXXX", name: "DSK", icon: "business" },
@@ -63,7 +64,7 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
       Linking.openURL(requisition.link);
       onSuccess(requisition.id);
     } catch (error: any) {
-      setValidationError(error.message);
+      setValidationError(getErrorMessage(error, "Could not start the bank connection. Please try again."));
     } finally {
       setLoading(false);
     }
