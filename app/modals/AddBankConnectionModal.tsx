@@ -1,9 +1,21 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/constants/Colors";
 import { createRequisition } from "@/api/bankConnectionService";
 import * as Linking from "expo-linking";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
@@ -27,6 +39,7 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState("");
   const { showAlert } = useAlert();
+  const insets = useSafeAreaInsets();
 
   const handleCreateRequisition = async () => {
     setValidationError("");
@@ -65,7 +78,7 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={resetAndClose}>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.modalContent}>
           <LinearGradient
             colors={[colors.backgroundGradient.start, colors.backgroundGradient.end]}
@@ -78,7 +91,12 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
             <Text style={styles.subtitle}>Connect your financial institution</Text>
           </LinearGradient>
 
-          <View style={styles.formContainer}>
+          <ScrollView
+            style={styles.formScroll}
+            contentContainerStyle={[styles.formContainer, { paddingBottom: 25 + insets.bottom }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.label}>Connection Name</Text>
             <View style={[styles.inputContainer, validationError ? styles.inputError : null]}>
               <Ionicons name="bookmark-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
@@ -142,9 +160,9 @@ export default function AddBankConnectionModal({ visible, onClose, onSuccess }: 
                 <Text style={[styles.actionButtonText, styles.cancelButtonText]}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -160,7 +178,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: "hidden",
-    maxHeight: "80%",
+    maxHeight: "92%",
+  },
+  formScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   gradientHeader: {
     padding: 30,
