@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   SafeAreaView,
   TouchableOpacity,
   Platform,
@@ -31,13 +31,10 @@ export default function Index() {
   const { transactions, isLoading: loading, refreshTransactions } = useTransactions();
   const [greeting, setGreeting] = useState("");
   const [suggestions, setSuggestions] = useState<AnalysisItem[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
-  const [lastMonthTotal, setLastMonthTotal] = useState(0);
-  const [percentageChange, setPercentageChange] = useState(0);
   const [selectedMonthView, setSelectedMonthView] = useState<"current" | "previous">("current");
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const screenWidth = Dimensions.get("window").width;
+  const { width: windowWidth } = useWindowDimensions();
+  const chartWidth = Math.min(windowWidth - 80, 320);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,101 +46,83 @@ export default function Index() {
       setGreeting(`Good ${timeOfDay}${name ? `, ${name}` : ""}!`);
     });
   }, []);
-  useEffect(() => {
-    if (loading || transactions.length === 0) return;
 
-    const analyzeTransactions = async () => {
-      try {
-        const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  const { currentMonthTotal, lastMonthTotal, percentageChange, chartData } = useMemo(() => {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-        let currentMonthExpense = 0;
-        let lastMonthExpense = 0;
+    let currentMonthExpense = 0;
+    let lastMonthExpense = 0;
+    const currentByCategory: Record<string, number> = {};
+    const lastByCategory: Record<string, number> = {};
 
-        const currentMonthExpenseByCategory: Record<string, number> = {};
-        const lastMonthExpenseByCategory: Record<string, number> = {};
+    transactions.forEach((tx) => {
+      if (tx.amount >= 0) return;
+      const absAmount = Math.abs(tx.amount);
+      const txDate = new Date(tx.valueDate);
 
-        transactions.forEach((tx) => {
-          if (tx.amount < 0) {
-            const absAmount = Math.abs(tx.amount);
-            const txDate = new Date(tx.valueDate);
-
-            if (txDate >= currentMonthStart && txDate <= now) {
-              currentMonthExpense += absAmount;
-              currentMonthExpenseByCategory[tx.category] =
-                (currentMonthExpenseByCategory[tx.category] || 0) + absAmount;
-            }
-
-            if (txDate >= lastMonthStart && txDate <= lastMonthEnd) {
-              lastMonthExpense += absAmount;
-              lastMonthExpenseByCategory[tx.category] = (lastMonthExpenseByCategory[tx.category] || 0) + absAmount;
-            }
-          }
-        });
-
-        setCurrentMonthTotal(currentMonthExpense);
-        setLastMonthTotal(lastMonthExpense);
-        const change = lastMonthExpense > 0 ? ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100 : 0;
-        setPercentageChange(change);
-
-        const displayData =
-          selectedMonthView === "current"
-            ? {
-                total: currentMonthExpense,
-                expenseByCategory: currentMonthExpenseByCategory,
-                label: "This Month",
-              }
-            : {
-                total: lastMonthExpense,
-                expenseByCategory: lastMonthExpenseByCategory,
-                label: "Last Month",
-              };
-
-        const chartArray = Object.keys(displayData.expenseByCategory)
-          .sort((a, b) => displayData.expenseByCategory[b] - displayData.expenseByCategory[a])
-          .map((category, index) => ({
-            name: category,
-            amount: formatNumber(displayData.expenseByCategory[category]),
-            value: parseFloat(displayData.expenseByCategory[category].toFixed(2)),
-            color: colorPalette[index % colorPalette.length],
-            legendFontColor: colors.text,
-            legendFontSize: 12,
-          }));
-
-        setChartData(chartArray);
-      } catch (error: any) {
-        console.error("Failed to analyze transactions", error.message);
+      if (txDate >= currentMonthStart && txDate <= now) {
+        currentMonthExpense += absAmount;
+        currentByCategory[tx.category] = (currentByCategory[tx.category] || 0) + absAmount;
       }
+      if (txDate >= lastMonthStart && txDate <= lastMonthEnd) {
+        lastMonthExpense += absAmount;
+        lastByCategory[tx.category] = (lastByCategory[tx.category] || 0) + absAmount;
+      }
+    });
+
+    const byCategory = selectedMonthView === "current" ? currentByCategory : lastByCategory;
+    const chartArray = Object.keys(byCategory)
+      .sort((a, b) => byCategory[b] - byCategory[a])
+      .map((category, index) => ({
+        name: category,
+        amount: formatNumber(byCategory[category]),
+        value: parseFloat(byCategory[category].toFixed(2)),
+        color: colorPalette[index % colorPalette.length],
+        legendFontColor: colors.text,
+        legendFontSize: 12,
+      }));
+
+    return {
+      currentMonthTotal: currentMonthExpense,
+      lastMonthTotal: lastMonthExpense,
+      percentageChange:
+        lastMonthExpense > 0 ? ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100 : 0,
+      chartData: chartArray,
     };
+  }, [transactions, selectedMonthView]);
 
-    analyzeTransactions();
-  }, [transactions, loading, selectedMonthView]);
-
-  // Fetch analysis recommendations from API
+  // Re-fetch recommendations when the set of transactions changes, not on every refresh.
+  const transactionCount = transactions.length;
+  const hasTransactions = transactionCount > 0;
   useEffect(() => {
-    if (loading || transactions.length === 0) return;
+    if (!hasTransactions) return;
 
+    let cancelled = false;
     const loadAnalysis = async () => {
       try {
         setAnalysisLoading(true);
         const analysisData = await fetchAnalysis();
-        setSuggestions(analysisData);
+        if (!cancelled) setSuggestions(analysisData);
       } catch (error: any) {
         console.error("Failed to fetch analysis data", error.message);
-        setSuggestions([]);
+        if (!cancelled) setSuggestions([]);
       } finally {
-        setAnalysisLoading(false);
+        if (!cancelled) setAnalysisLoading(false);
       }
     };
 
     loadAnalysis();
-  }, [transactions, loading]);
+    return () => {
+      cancelled = true;
+    };
+  }, [transactionCount]);
 
   useEffect(() => {
     refreshTransactions();
-  }, []);
+  }, [refreshTransactions]);
 
   return (
     <>
@@ -163,7 +142,7 @@ export default function Index() {
 
             <Text style={styles.greeting}>{greeting}</Text>
 
-            {loading ? (
+            {loading && !hasTransactions ? (
               <ActivityIndicator size="large" color={colors.white} style={styles.loader} />
             ) : (
               <>
@@ -242,7 +221,7 @@ export default function Index() {
                       <Text style={styles.sectionTitle}>📊 Expense Breakdown</Text>
                       {chartData.length > 0 ? (
                         <View style={styles.chartWrapper}>
-                          <PieChart data={chartData} width={screenWidth - 60} height={220} />
+                          <PieChart data={chartData} width={chartWidth} height={220} />
                           <View style={styles.customLegend}>
                             {chartData.map((item, index) => (
                               <View key={index} style={styles.legendItem}>
