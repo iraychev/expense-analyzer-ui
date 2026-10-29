@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G } from "react-native-svg";
+import Svg, { Path, G, Circle } from "react-native-svg";
 
 interface ChartDataItem {
   value: number;
@@ -40,6 +40,21 @@ const PieChart: React.FC<PieChartProps> = ({
     const angle = percentage * 360;
     
     if (angle === 0) return null;
+
+    // A single 360° arc has identical start and end points and would render nothing.
+    if (angle >= 359.99) {
+      return (
+        <Circle
+          key={`slice-${index}`}
+          cx={centerX}
+          cy={centerY}
+          r={radius}
+          fill={item.color}
+          stroke={borderColor}
+          strokeWidth={borderWidth}
+        />
+      );
+    }
     
     const startAngle = cumulativeAngle;
     const endAngle = startAngle + angle;
