@@ -16,6 +16,7 @@ import Head from "expo-router/head";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
+import { getErrorMessage } from "@/api/errors";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -27,7 +28,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      showAlert("Validation Error", "Please fill in all fields");
+      showAlert("Missing Details", "Enter your username and password.");
       return;
     }
 
@@ -36,8 +37,7 @@ export default function Login() {
       await login(username, password);
       router.replace("/");
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message;
-      showAlert("Login Failed", `Error: ${errorMessage}`);
+      showAlert("Login Failed", getErrorMessage(error, "Could not sign in. Please try again."));
     } finally {
       setLoading(false);
     }
