@@ -12,6 +12,8 @@ export interface BankConnection {
     bankConnectionId?: number;
     transactions: Transaction[];
     account_id?: string;
+    /** ISO timestamp of the last fetch from the bank (null before the first sync). */
+    lastSyncedAt?: string | null;
   }[];
   userId: number;
 }

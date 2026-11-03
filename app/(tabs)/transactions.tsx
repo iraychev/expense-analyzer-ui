@@ -18,6 +18,9 @@ import Head from "expo-router/head";
 import { useTransactions } from "@/context/TransactionContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
+import { getCategoryIcon } from "@/constants/categoryIcons";
+import CategoryPickerModal from "@/app/modals/CategoryPickerModal";
+import { Transaction } from "@/interface/Transaction";
 
 const ALL_MONTHS = "all";
 
@@ -50,6 +53,7 @@ export default function Transactions() {
 
   const monthOptions = useMemo(() => buildMonthOptions(new Date()), []);
   const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[monthOptions.length - 1].key);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -88,26 +92,6 @@ export default function Transactions() {
   const hasActiveFilters = selectedCategory !== "" || selectedType !== "all";
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Supermarkets":
-        return "shopping-cart";
-      case "Financial Services":
-        return "bank";
-      case "Shopping":
-        return "shopping-bag";
-      case "Restaurants and bars":
-        return "cutlery";
-      case "Entertainment and Sport":
-        return "futbol-o";
-      case "Traveling and Vacation":
-        return "plane";
-      case "Health and Beauty":
-        return "heartbeat";
-      default:
-        return "question-circle";
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -130,7 +114,13 @@ export default function Transactions() {
   };
 
   const renderTransaction = ({ item }: { item: any }) => (
-    <View style={styles.transaction}>
+    <TouchableOpacity
+      style={styles.transaction}
+      activeOpacity={0.7}
+      onPress={() => setEditingTransaction(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Change category of ${item.description}`}
+    >
       <View style={[styles.iconContainer, { backgroundColor: colors.primary + "10" }]}>
         <FontAwesome name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
       </View>
@@ -149,7 +139,7 @@ export default function Transactions() {
         </Text>
         <Text style={styles.valueDate}>{formatDate(item.valueDate)}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -309,6 +299,8 @@ export default function Transactions() {
           </View>
         </SafeAreaView>
       </LinearGradient>
+
+      <CategoryPickerModal transaction={editingTransaction} onClose={() => setEditingTransaction(null)} />
     </>
   );
 }

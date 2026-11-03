@@ -15,6 +15,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
 import { getErrorMessage } from "@/api/errors";
 
+const formatTimeAgo = (date: Date): string => {
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+};
+
 export default function BankConnections() {
   const [user, setUser] = useState<User | null>(null);
   const [expandedConnections, setExpandedConnections] = useState<number[]>([]);
@@ -62,6 +72,14 @@ export default function BankConnections() {
       });
     }, [])
   );
+
+  // The backend skips accounts synced within the last few hours, so show how fresh the data is.
+  const lastSyncedAt = (() => {
+    const times = (user?.bankConnections ?? [])
+      .flatMap((c) => c.accounts.map((a) => (a.lastSyncedAt ? new Date(a.lastSyncedAt).getTime() : NaN)))
+      .filter((t) => !isNaN(t));
+    return times.length > 0 ? new Date(Math.max(...times)) : null;
+  })();
 
   const handleUpdateBankConnections = async () => {
     const username = await AsyncStorage.getItem("username");
@@ -263,6 +281,7 @@ export default function BankConnections() {
                           {syncing ? "Syncing Transactions..." : "Sync Transactions & Accounts"}
                         </Text>
                       </TouchableOpacity>
+                      {lastSyncedAt && <Text style={styles.syncHint}>Last synced {formatTimeAgo(lastSyncedAt)}</Text>}
                     </View>
                   </>
                 ) : (
@@ -472,6 +491,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  syncHint: {
+    marginTop: 10,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: "center",
   },
   disabledButton: {
     opacity: 0.7,
