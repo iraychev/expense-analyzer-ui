@@ -9,3 +9,13 @@ export const fetchTransactions = async (username: string): Promise<Transaction[]
   );
   return transactions;
 };
+
+export const fetchCategories = async (): Promise<string[]> => {
+  const response = await axiosInstance.get("/transactions/categories");
+  return response.data;
+};
+
+export const updateTransactionCategory = async (id: number, category: string): Promise<Transaction> => {
+  const response = await axiosInstance.put(`/transactions/${id}/category`, { category });
+  return response.data;
+};
